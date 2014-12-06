@@ -1,7 +1,11 @@
-function Game($el, width, height) {
-	function init() {
+function Game($el) {
+	function reset(width, height) {
+		self.width = width;
+		self.height = height;
+		$el.find(".field").remove();
+		fields = [];
 		$el.width(width * FIELD_SIZE);
-		$el.height(width * FIELD_SIZE);
+		$el.height(height * FIELD_SIZE);
 		for (var x=0; x<width; x++) {
 			var line = [];
 			fields.push(line);
@@ -23,15 +27,35 @@ function Game($el, width, height) {
 		players.push(player);
 		$el.append(player.element());
 	}
-	var fields = [],
+	function getPlayers() {
+		return players.slice(0);
+	}
+	function playerExists(method) {
+		var ret = false;
+		$.each(players,function(idx, p) {
+			if (p[method]()) {
+				ret = true;
+			}
+		});
+		return ret;
+	}
+	function isSalesforceEntried() {
+		return playerExists("isSalesforce");
+	}
+	function isHerokuEntried() {
+		return playerExists("isHeroku");
+	}
+	var self = this,
+		fields = [],
 		players = [];
 	$.extend(this, {
-		"width": width,
-		"height": height,
 		"field": field,
-		"addPlayer": addPlayer
+		"addPlayer": addPlayer,
+		"reset": reset,
+		"getPlayers": getPlayers,
+		"isSalesforceEntried": isSalesforceEntried,
+		"isHerokuEntried": isHerokuEntried
 	});
-	init();
 }
 
 function Field($el, x, y) {

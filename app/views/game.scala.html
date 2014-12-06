@@ -3,6 +3,7 @@
 @main {
 <h1>@Messages("title")</h1>
 <div id="game-setting">
+	<h2>@Messages("gameSetting")</h2>
 	<table>
 		<tr>
 			<th>@Messages("fieldWidth")</th><td><input type="number" id="field-width" value="8"/></td>
@@ -21,11 +22,15 @@
 		</tr>
 	</table>
 </div>
-<div>
-	<button id="salesforce-entry" class="btn salesforce">@Messages("salesforceEntry")</button>
-	<button id="heroku-entry" class="btn heroku" style="background:">@Messages("herokuEntry")</button>
+<div class="workspace">
+	<div class="salesforce-side pull-left">
+		<button id="salesforce-entry" class="btn salesforce">@Messages("salesforceEntry")</button>
+	</div>
+	<div id="game" class="game" style="display:none;"></div>
+	<div class="heroku-side pull-right">
+		<button id="heroku-entry" class="btn heroku">@Messages("herokuEntry")</button>
+	</div>
 </div>
-<div id="game" class="game" style="display:none;"></div>
 <script src="/assets/javascripts/app.js"></script>
 <script>
 $(function() {

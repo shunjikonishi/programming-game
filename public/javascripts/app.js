@@ -11,54 +11,60 @@ function showError(msg) {
 
 
 pg.Application = function(id) {
+	function init() {
+		$("#game-gen").click(function() {
+			var setting = new GameSetting();
+			game.reset(setting.fieldWidth(), setting.fieldHeight());
+			generateObject(setting.wallCount(), Wall);
+			generateObject(setting.wallCount(), Point);
+			$.each(game.getPlayers(), function(idx, p) {
+				var pos = randomPos();
+				p.reset(pos.x, pos.y);
+			});
+		});
+		$("#salesforce-entry").click(function() {
+			if (game.isSalesforceEntried()) {
+				return;
+			}
+			entry("/assets/images/salesforce.jpg");
+			$(this).prop("disabled", true);
+		});
+		$("#heroku-entry").click(function() {
+			if (game.isHerokuEntried()) {
+				return;
+			}
+			entry("/assets/images/heroku.png");
+			$(this).prop("disabled", true);
+		});
+	}
 	function random(n) {
 		return Math.floor(Math.random() * n);
 	}
-	function generateObject(cnt, Func) {
-		while (cnt > 0) {
-			var x = random(game.width),
-				y = random(game.height),
-				field = game.field(x, y);
-			if (!field.hasObject()) {
-				field.object(new Func());
-				cnt--;
-			}
-		}
-	}
-	function entry(imageSrc) {
-		if (!game) {
-			return;
-		}
+	function randomPos() {
 		while (true) {
 			var x = random(game.width),
 				y = random(game.height),
 				field = game.field(x, y);
 			if (!field.hasObject()) {
-				game.addPlayer(new Player(imageSrc, x, y));
-				return;
+				return {
+					"x": x,
+					"y": y
+				};
 			}
 		}
 	}
-	var game = null;
-	$("#game-gen").click(function() {
-		if (game != null) {
-			return;
+	function generateObject(cnt, Func) {
+		for (var i=0; i<cnt; i++) {
+			var pos = randomPos();
+			game.field(pos.x, pos.y).object(new Func());
 		}
-		var setting = new GameSetting();
-
-		game = new Game($("#game"), setting.fieldWidth(), setting.fieldHeight());
-		generateObject(setting.wallCount(), Wall);
-		generateObject(setting.wallCount(), Point);
-		$(this).prop("disabled", true);
-	});
-	$("#salesforce-entry").click(function() {
-		entry("/assets/images/salesforce.jpg");
-		$(this).prop("disabled", true);
-	});
-	$("#heroku-entry").click(function() {
-		entry("/assets/images/heroku.png");
-		$(this).prop("disabled", true);
-	});
+	}
+	function entry(imageSrc) {
+		var pos = randomPos();
+		game.addPlayer(new Player(imageSrc, pos.x, pos.y));
+	}
+	var game = new Game($("#game"));
+	init();
 };
 
 function GameSetting() {
@@ -67,10 +73,14 @@ function GameSetting() {
 	this.pointCount = function() { return $("#point-count").val();};
 	this.wallCount = function() { return $("#wall-count").val();};
 }
-function Game($el, width, height) {
-	function init() {
+function Game($el) {
+	function reset(width, height) {
+		self.width = width;
+		self.height = height;
+		$el.find(".field").remove();
+		fields = [];
 		$el.width(width * FIELD_SIZE);
-		$el.height(width * FIELD_SIZE);
+		$el.height(height * FIELD_SIZE);
 		for (var x=0; x<width; x++) {
 			var line = [];
 			fields.push(line);
@@ -92,15 +102,35 @@ function Game($el, width, height) {
 		players.push(player);
 		$el.append(player.element());
 	}
-	var fields = [],
+	function getPlayers() {
+		return players.slice(0);
+	}
+	function playerExists(method) {
+		var ret = false;
+		$.each(players,function(idx, p) {
+			if (p[method]()) {
+				ret = true;
+			}
+		});
+		return ret;
+	}
+	function isSalesforceEntried() {
+		return playerExists("isSalesforce");
+	}
+	function isHerokuEntried() {
+		return playerExists("isHeroku");
+	}
+	var self = this,
+		fields = [],
 		players = [];
 	$.extend(this, {
-		"width": width,
-		"height": height,
 		"field": field,
-		"addPlayer": addPlayer
+		"addPlayer": addPlayer,
+		"reset": reset,
+		"getPlayers": getPlayers,
+		"isSalesforceEntried": isSalesforceEntried,
+		"isHerokuEntried": isHerokuEntried
 	});
-	init();
 }
 
 function Field($el, x, y) {
@@ -140,29 +170,96 @@ function Wall() {
 function Point() {
 	this.__proto__ = new FieldObject("/assets/images/gold.png", true);
 }
-function Player(imageSrc, x, y) {
+function Player(imageSrc, initialX, initialY) {
 	function init() {
 		var $img = $("<img/>");
 		$img.attr("src", imageSrc);
 		$div.append($img);
 		$div.addClass("player");
-		pos(x, y);
+		pos(initialX, initialY);
+	}
+	function isSalesforce() {
+		return imageSrc.indexOf("salesforce") !== -1;
+	}
+	function isHeroku() {
+		return imageSrc.indexOf("heroku") !== -1;
 	}
 	function element() {
 		return $div;
 	}
-	function pos(x, y) {
+	function reset(nx, ny) {
+		commands = [];
+		if (nx) {
+			initialX = nx;
+		}
+		if (ny) {
+			initialY = ny;
+		} 
+		pos(initialX, initialY);
+	}
+	function nextCommand() {
+		return commands.shift();
+	}
+	function commandCount() {
+		return commands.length;
+	}
+	function pos(nx, ny) {
+		x = nx;
+		y = ny;
 		var left = x * FIELD_SIZE,
 			top = y * FIELD_SIZE;
 		$div.css({
 			"left": left,
 			"top": top
 		});
+console.log("pos", left, top);
 	}
-	var $div = $("<div/>");
+	function wait() {
+		commands.push({
+			"command": "wait"
+		});
+	}
+	function move(command, n) {
+		n = parseInt(n || 1);
+		if (n === 0) {
+			wait();
+		} else {
+			for (var i=0; i<n; i++) {
+				commands.push({
+					"command": "command"
+				});
+			}
+		}
+	}
+	function left(n) {
+		move("left", n);
+	}
+	function right(n) {
+		move("right", n);
+	}
+	function up(n) {
+		move("up", n);
+	}
+	function down(n) {
+		move("down", n);
+	}
+	var x, y,
+		$div = $("<div/>"),
+		commands = [];
 
 	$.extend(this, {
-		"element": element
+		"element": element,
+		"isSalesforce": isSalesforce,
+		"isHeroku": isHeroku,
+		"nextCommand": nextCommand,
+		"commandCount": commandCount,
+		"reset": reset,
+		"pos": pos,
+		"wait": wait,
+		"left": left,
+		"right": right,
+		"up": up,
+		"down": down
 	});
 	init();
 }
