@@ -1,7 +1,20 @@
-@(message: String)
+@(id: String)
 
-@main("Welcome to Play") {
+@main {
+<h1>@Messages("title")</h1>
+@Messages("path"): <input id="gameId" value="@id" size="40"/>
+<button class="btn primary" id="btnGo">@Messages("go")</button>
 
-    @play20.welcome(message)
-
+<script>
+$(function() {
+	$("#btnGo").click(function() {
+		var id = $("#gameId").val();
+		if (!id) {
+			alert(MSG.pathError);
+			return;
+		}
+		location.href = "/game/" + id;
+	})
+});
+</script>
 }

@@ -1,0 +1,28 @@
+{
+  "name": "programming-game",
+  "version": "0.0.0",
+  "description": "This is your new Play application =================================",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/shunjikonishi/programming-game.git"
+  },
+  "author": "Shunji Konishi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/shunjikonishi/programming-game/issues"
+  },
+  "homepage": "https://github.com/shunjikonishi/programming-game",
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-contrib-concat": "^0.5.0",
+    "grunt-contrib-jshint": "^0.10.0",
+    "grunt-contrib-watch": "^0.6.1"
+  }
+}

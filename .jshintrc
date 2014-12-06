@@ -1,0 +1,19 @@
+{
+  "unused": false,
+  "curly": true,
+  "eqeqeq": true,
+  "immed": true,
+  "latedef": false,
+  "newcap": true,
+  "noarg": true,
+  "sub": true,
+  "undef": false,
+  "boss": true,
+  "eqnull": true,
+  "node": true,
+  "proto": true,
+  "predef": [
+    "pg",
+    "$"
+  ]
+}

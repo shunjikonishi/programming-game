@@ -1,0 +1,35 @@
+@(id: String)
+
+@main {
+<h1>@Messages("title")</h1>
+<div id="game-setting">
+	<table>
+		<tr>
+			<th>@Messages("fieldWidth")</th><td><input type="number" id="field-width" value="8"/></td>
+		</tr>
+		<tr>
+			<th>@Messages("fieldHeight")</th><td><input type="number" id="field-height" value="8"/></td>
+		</tr>
+		<tr>
+			<th>@Messages("pointCount")</th><td><input type="number" id="point-count" value="10"/></td>
+		</tr>
+		<tr>
+			<th>@Messages("wallCount")</th><td><input type="number" id="wall-count" value="10"/></td>
+		</tr>
+		<tr>
+			<td colspan="2"><button id="game-gen" class="btn">@Messages("generateField")</button></td>
+		</tr>
+	</table>
+</div>
+<div>
+	<button id="salesforce-entry" class="btn salesforce">@Messages("salesforceEntry")</button>
+	<button id="heroku-entry" class="btn heroku" style="background:">@Messages("herokuEntry")</button>
+</div>
+<div id="game" class="game" style="display:none;"></div>
+<script src="/assets/javascripts/app.js"></script>
+<script>
+$(function() {
+	var app = new pg.Application("@id");
+});
+</script>
+}
