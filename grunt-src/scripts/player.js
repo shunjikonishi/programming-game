@@ -4,7 +4,7 @@ function Player(imageSrc, initialX, initialY) {
 		$img.attr("src", imageSrc);
 		$div.append($img);
 		$div.addClass("player");
-		pos(initialX, initialY);
+		reset(initialX, initialY);
 	}
 	function isSalesforce() {
 		return imageSrc.indexOf("salesforce") !== -1;
@@ -32,6 +32,12 @@ function Player(imageSrc, initialX, initialY) {
 		return commands.length;
 	}
 	function pos(nx, ny) {
+		if (arguments.length === 0) {
+			return {
+				"x": x,
+				"y": y
+			};
+		}
 		x = nx;
 		y = ny;
 		var left = x * FIELD_SIZE,
@@ -40,7 +46,6 @@ function Player(imageSrc, initialX, initialY) {
 			"left": left,
 			"top": top
 		});
-console.log("pos", left, top);
 	}
 	function wait() {
 		commands.push({
@@ -54,7 +59,7 @@ console.log("pos", left, top);
 		} else {
 			for (var i=0; i<n; i++) {
 				commands.push({
-					"command": "command"
+					"command": command
 				});
 			}
 		}

@@ -6,7 +6,7 @@
 			"path": ".",
 			"folder_exclude_patterns" : [
 				"node_modules",
-				"public/javascripts",
+				"bower_components",
 				"target"
 			]
 		}

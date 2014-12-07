@@ -1,35 +1,86 @@
 @(id: String)
 
 @main {
+<link rel="stylesheet" href="/assets/javascripts/codemirror/lib/codemirror.css">
+<script src="/assets/javascripts/codemirror/lib/codemirror.js"></script>
+<script src="/assets/javascripts/codemirror/mode/javascript/javascript.js"></script>
+<script src="/assets/javascripts/codemirror/addon/selection/active-line.js"></script>
+
 <h1>@Messages("title")</h1>
 <div id="game-setting">
-	<h2>@Messages("gameSetting")</h2>
-	<table>
-		<tr>
-			<th>@Messages("fieldWidth")</th><td><input type="number" id="field-width" value="8"/></td>
-		</tr>
-		<tr>
-			<th>@Messages("fieldHeight")</th><td><input type="number" id="field-height" value="8"/></td>
-		</tr>
-		<tr>
-			<th>@Messages("pointCount")</th><td><input type="number" id="point-count" value="10"/></td>
-		</tr>
-		<tr>
-			<th>@Messages("wallCount")</th><td><input type="number" id="wall-count" value="10"/></td>
-		</tr>
-		<tr>
-			<td colspan="2"><button id="game-gen" class="btn">@Messages("generateField")</button></td>
-		</tr>
-	</table>
+	<div>
+		<span class="game-setting-title">@Messages("gameSetting")</span>
+		<button id="game-gen" class="btn btn-sm">@Messages("reset")</button>
+		<button id="toggle-setting" class="btn btn-sm">
+			<span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
+		</button>
+	</div>
+	<div id="game-setting-table" style="display:none;">
+		<table>
+			<tr>
+				<th>@Messages("fieldWidth")</th><td><input type="number" id="field-width" value="8"/></td>
+			</tr>
+			<tr>
+				<th>@Messages("fieldHeight")</th><td><input type="number" id="field-height" value="8"/></td>
+			</tr>
+			<tr>
+				<th>@Messages("pointCount")</th><td><input type="number" id="point-count" value="10"/></td>
+			</tr>
+			<tr>
+				<th>@Messages("wallCount")</th><td><input type="number" id="wall-count" value="10"/></td>
+			</tr>
+			<tr>
+			</tr>
+		</table>
+	</div>
 </div>
 <div class="workspace">
 	<div class="salesforce-side pull-left">
-		<button id="salesforce-entry" class="btn salesforce">@Messages("salesforceEntry")</button>
+		<div>
+			<img src="/assets/images/salesforce.png" class="side-icon"/>
+			<button id="salesforce-entry" class="btn salesforce">@Messages("entry")</button>
+		</div>
+		<div>
+			<button id="salesforce-test" class="btn btn-success btn-test">@Messages("test")</button>
+		</div>
+		<textarea id="salesforce-editor" rows="20"></textarea>
+		<div>
+			<ul class="salesforce-buttons">
+				<li>
+					<button id="salesforce-up" class="btn">
+						<span class="glyphicon glyphicon-circle-arrow-up" aria-hidden="true"></span>
+					</button>
+					<button id="salesforce-undo" class="btn">Undo</button>
+				</li>
+				<li>
+					<button id="salesforce-left" class="btn">
+						<span class="glyphicon glyphicon-circle-arrow-left" aria-hidden="true"></span>
+					</button>
+					<button id="salesforce-right" class="btn">
+						<span class="glyphicon glyphicon-circle-arrow-right" aria-hidden="true"></span>
+					</button>
+					<button id="salesforce-del" class="btn">DEL</button>
+				</li>
+				<li>
+					<button id="salesforce-down" class="btn">
+						<span class="glyphicon glyphicon-circle-arrow-down" aria-hidden="true"></span>
+					</button>
+					<button id="salesforce-ins" class="btn btn-success">INS</button>
+				</li>
+			</ul>
+		</div>
+	</div>
+	<div class="heroku-side pull-right">
+		<div>
+			<img src="/assets/images/heroku.png" class="side-icon"/>
+			<button id="heroku-entry" class="btn heroku">@Messages("entry")</button>
+		</div>
+		<div>
+			<button id="heroku-test" class="btn btn-success btn-test">@Messages("test")</button>
+		</div>
+		<textarea id="heroku-editor" rows="20"></textarea>
 	</div>
 	<div id="game" class="game" style="display:none;"></div>
-	<div class="heroku-side pull-right">
-		<button id="heroku-entry" class="btn heroku">@Messages("herokuEntry")</button>
-	</div>
 </div>
 <script src="/assets/javascripts/app.js"></script>
 <script>

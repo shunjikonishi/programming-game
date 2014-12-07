@@ -1,9 +1,19 @@
 .game {
 	position: relative;
-	margin: 100px;
+	margin: 10px auto;
 	padding: 0;
 	border-top: 1px solid #000;
 	border-right: 1px solid #000;
+}
+
+#game-setting th, #game-setting td {
+	padding: 4px;
+}
+
+.game-setting-title {
+	font-weight: bold;
+	margin-left: 20px;
+	margin-right: 40px;
 }
 
 .field {
@@ -32,11 +42,13 @@
 .btn.heroku {
 	background: #5B4892;
 	color: #FFF;
+	margin: 5px;
 }
 
 .btn.salesforce {
 	background: #00A0DF;
 	color: #FFF;
+	margin: 5px;
 }
 
 .player {
@@ -51,9 +63,61 @@
 }
 
 .workspace {
+	position: relative;
 	width: 100%;
 }
-.salesforce-side, heroku-side {
-	width: 100px;
+
+.side-icon {
+	width: 48px;
+	height: 48px;
+	margin-bottom: 10px;
 }
 
+.btn-test {
+	margin-bottom: 10px;
+}
+
+.salesforce-side, .heroku-side {
+	width: 220px;
+	margin: 10px;
+}
+
+#salesforce-editor, #heroku-editor {
+	width: 100%;
+}
+
+.CodeMirror {
+	width: 220px;
+	border: solid 1px #000;
+}
+
+.editor-readonly {
+	background-color: #d3d3d3;
+}
+
+.salesforce-buttons {
+	list-style: none;
+	margin-top: 10px;
+	padding: 0;
+}
+
+.salesforce-buttons li {
+	list-style: none;
+	margin-top: 5px;
+}
+
+#salesforce-up, #salesforce-right, #salesforce-down {
+	margin-left: 45px;
+}
+
+#salesforce-undo, #salesforce-del, #salesforce-ins {
+	width: 60px;
+}
+
+#salesforce-undo, #salesforce-ins {
+	margin-left: 50px;
+}
+
+#salesforce-del {
+	margin-left: 5px;
+}

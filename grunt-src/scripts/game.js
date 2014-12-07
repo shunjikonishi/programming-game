@@ -18,7 +18,17 @@ function Game($el) {
 		$el.show();
 	}
 	function field(x, y) {
-		return fields[x][y];
+		return fields[y][x];
+	}
+	function allFields() {
+		var ret = [];
+		for (var y=0; y<fields.length; y++) {
+			var line = fields[y];
+			for (var x=0; x<line.length; x++) {
+				ret.push(line[x]);
+			}
+		}
+		return ret;
 	}
 	function addPlayer(player) {
 		if (players.length === 2) {
@@ -30,20 +40,108 @@ function Game($el) {
 	function getPlayers() {
 		return players.slice(0);
 	}
-	function playerExists(method) {
-		var ret = false;
+	function getPlayer(method) {
+		var ret = null;
 		$.each(players,function(idx, p) {
 			if (p[method]()) {
-				ret = true;
+				ret = p;
 			}
 		});
 		return ret;
 	}
 	function isSalesforceEntried() {
-		return playerExists("isSalesforce");
+		return !!getPlayer("isSalesforce");
 	}
 	function isHerokuEntried() {
-		return playerExists("isHeroku");
+		return !!getPlayer("isHeroku");
+	}
+	function getSalesforcePlayer() {
+		return getPlayer("isSalesforce");
+	}
+	function getHerokuPlayer() {
+		return getPlayer("isHeroku");
+	}
+	function runCommand(player, command) {
+		var pos = player.pos(),
+			end = false,
+			wait = false;
+		switch (command.command) {
+			case "up":
+				pos.y -= 1;
+				if (pos.y < 0) {
+					end = true;
+				}
+				break;
+			case "down":
+				pos.y += 1;
+				if (pos.y >= self.height) {
+					end = true;
+				}
+				break;
+			case "left":
+				pos.x -= 1;
+				if (pos.x < 0) {
+					end = true;
+				}
+				break;
+			case "right":
+				pos.x += 1;
+				if (pos.x >= self.width) {
+					end = true;
+				}
+				break;
+			case "wait":
+				wait = true;
+				break;
+		}
+		if (end) {
+			gameover(player, pos.x, pos.y);
+			return;
+		}
+		if (!wait) {
+			var obj = field(pos.x, pos.y).object();
+			if (obj) {
+				if (obj.canEnter()) {
+					obj.visible(false);
+				} else {
+					wait = true;
+				}
+			} 
+		}
+		if (!wait) {
+			player.pos(pos.x, pos.y);
+		}
+	}
+	function gameover(player, x, y) {
+		player.reset();
+	}
+	function test(player, commands) {
+		function run() {
+			setTimeout(function() {
+				if (player.commandCount() > 0) {
+					runCommand(player, player.nextCommand());
+					run();
+				} else {
+					player.reset();
+					$.each(allFields(), function(idx, f) {
+						if (f.object()) {
+							f.object().visible(true);
+						}
+					});
+				}
+			}, 200);
+		}
+		var context = {
+			"p": player,
+			"onError": function(msg) {
+				console.log(msg);
+				player.wait();
+			}
+		}, interpreter = new Interpreter(context, new Parser());
+		$.each(commands, function(idx, cmd) {
+			interpreter.run(cmd);
+		});
+		run();
 	}
 	var self = this,
 		fields = [],
@@ -53,45 +151,11 @@ function Game($el) {
 		"addPlayer": addPlayer,
 		"reset": reset,
 		"getPlayers": getPlayers,
+		"getSalesforcePlayer": getSalesforcePlayer,
+		"getHerokuPlayer": getHerokuPlayer,
 		"isSalesforceEntried": isSalesforceEntried,
-		"isHerokuEntried": isHerokuEntried
+		"isHerokuEntried": isHerokuEntried,
+		"test": test
 	});
 }
 
-function Field($el, x, y) {
-	var obj = null;
-	function hasObject() { return !!this.obj;}
-	function object(v) {
-		if (v === undefined) {
-			return obj;
-		} else {
-			obj = v;
-			$el.empty().append(obj.image);
-		}
-	}
-	$.extend(this, {
-		"hasObject": hasObject,
-		"object": object
-	});
-}
-
-function FieldObject(imageSrc, enterable) {
-	var $img = $("<img/>");
-	$img.attr("src", imageSrc);
-	$img.addClass("object");
-
-	function image() { return $img;}
-	function canEnter() { return enterable;}
-	$.extend(this, {
-		"image": image,
-		"canEnter": canEnter
-	});
-}
-
-function Wall() {
-	this.__proto__ = new FieldObject("/assets/images/wall.png", false);
-}
-
-function Point() {
-	this.__proto__ = new FieldObject("/assets/images/gold.png", true);
-}

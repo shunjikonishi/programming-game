@@ -6,7 +6,9 @@ fieldWidth=フィールドの幅
 fieldHeight=フィールｄの高さ
 pointCount=ポイントの数
 wallCount=壁の数
-generateField=フィールドの生成
+reset=リセット
+entry=参加
+test=テスト
 
 ui.pathError=任意のパスを入力してください
 ui.tooManyPlayers=プレイヤーは二人までです。

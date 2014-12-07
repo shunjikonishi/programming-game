@@ -9,12 +9,16 @@ pg.Application = function(id) {
 				var pos = randomPos();
 				p.reset(pos.x, pos.y);
 			});
+			resetEditors();
+		}).click();
+		$("#toggle-setting").click(function() {
+			$("#game-setting-table").toggle();
 		});
 		$("#salesforce-entry").click(function() {
 			if (game.isSalesforceEntried()) {
 				return;
 			}
-			entry("/assets/images/salesforce.jpg");
+			entry("/assets/images/salesforce.png");
 			$(this).prop("disabled", true);
 		});
 		$("#heroku-entry").click(function() {
@@ -24,6 +28,10 @@ pg.Application = function(id) {
 			entry("/assets/images/heroku.png");
 			$(this).prop("disabled", true);
 		});
+
+		//For test
+		$("#salesforce-entry").click();
+		$("#heroku-entry").click();
 	}
 	function random(n) {
 		return Math.floor(Math.random() * n);
@@ -50,8 +58,22 @@ pg.Application = function(id) {
 	function entry(imageSrc) {
 		var pos = randomPos();
 		game.addPlayer(new Player(imageSrc, pos.x, pos.y));
+		resetEditors();
 	}
-	var game = new Game($("#game"));
+	function resetEditors() {
+		$.each(game.getPlayers(), function(idx, p) {
+			var pos = p.pos();
+			if (p.isSalesforce()) {
+				salesforceCtrl.getEditor().reset(pos.x, pos.y);
+			} else if (p.isHeroku()) {
+				herokuCtrl.getEditor().reset(pos.x, pos.y);
+			}
+		});
+	}
+	var game = new Game($("#game")),
+		salesforceCtrl = new SalesforceCtrl(game),
+		herokuCtrl = new HerokuCtrl(game);
+
 	init();
 };
 

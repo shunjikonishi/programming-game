@@ -20,7 +20,13 @@ module.exports = function(grunt) {
                     "grunt-src/scripts/common.js",
                     "grunt-src/scripts/application.js",
                     "grunt-src/scripts/game.js",
+                    "grunt-src/scripts/field.js",
                     "grunt-src/scripts/player.js",
+                    "grunt-src/scripts/salesforce.js",
+                    "grunt-src/scripts/heroku.js",
+                    "grunt-src/scripts/textEditor.js",
+                    "grunt-src/scripts/parser.js",
+                    "grunt-src/scripts/interpreter.js",
                     "grunt-src/scripts/outro.txt"
                 ],
                 dest: "public/javascripts/app.js"
@@ -49,7 +55,7 @@ module.exports = function(grunt) {
  
     loadDependencies(grunt.config("pkg").devDependencies);
 
-    grunt.registerTask('default', [ 'jshint', 'concat']);
+    grunt.registerTask('default', [ 'jshint', 'concat', 'watch']);
     grunt.registerTask('heroku', [ 'concat']);
 
 };
