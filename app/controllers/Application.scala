@@ -8,7 +8,8 @@ import java.util.UUID
 object Application extends Controller {
 
   def index = Action {
-    Ok(views.html.index(UUID.randomUUID.toString))
+    val id = UUID.randomUUID.toString
+    Redirect("/game/" + id)
   }
 
   def game(id: String) = Action {

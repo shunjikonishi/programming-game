@@ -1,5 +1,7 @@
 # Salesforce vs. Heroku
 
+http://salesforce-vs.herokuapp.com/
+
 ポイント＆クリックとコーディングのどちらが優れているのか？という闘いです。
 
 ## 概要
