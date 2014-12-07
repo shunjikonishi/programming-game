@@ -28,10 +28,22 @@ pg.Application = function(id) {
 			entry("/assets/images/heroku.png");
 			$(this).prop("disabled", true);
 		});
+		$gameStart.click(function() {
+			$gameStart.hide();
+			codingStart();
+			stopWatch.start(new GameSetting().codingTime(), executeStart());
+		});
 
 		//For test
 		$("#salesforce-entry").click();
 		$("#heroku-entry").click();
+	}
+	function codingStart() {
+		salesforceCtrl.codingStart();
+		herokuCtrl.codingStart();
+	}
+	function executeStart() {
+		
 	}
 	function random(n) {
 		return Math.floor(Math.random() * n);
@@ -72,7 +84,9 @@ pg.Application = function(id) {
 	}
 	var game = new Game($("#game")),
 		salesforceCtrl = new SalesforceCtrl(game),
-		herokuCtrl = new HerokuCtrl(game);
+		herokuCtrl = new HerokuCtrl(game),
+		stopWatch = new StopWatch($("#stopwatch")),
+		$gameStart = $("#game-start");
 
 	init();
 };
@@ -82,4 +96,6 @@ function GameSetting() {
 	this.fieldHeight = function() { return $("#field-height").val();};
 	this.pointCount = function() { return $("#point-count").val();};
 	this.wallCount = function() { return $("#wall-count").val();};
+	this.codingTime = function() { return $("#coding-time").val();};
+	this.gameTurn = function() { return $("#game-turn").val();};
 }

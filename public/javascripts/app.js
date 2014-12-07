@@ -40,10 +40,22 @@ pg.Application = function(id) {
 			entry("/assets/images/heroku.png");
 			$(this).prop("disabled", true);
 		});
+		$gameStart.click(function() {
+			$gameStart.hide();
+			codingStart();
+			stopWatch.start(new GameSetting().codingTime(), executeStart());
+		});
 
 		//For test
 		$("#salesforce-entry").click();
 		$("#heroku-entry").click();
+	}
+	function codingStart() {
+		salesforceCtrl.codingStart();
+		herokuCtrl.codingStart();
+	}
+	function executeStart() {
+		
 	}
 	function random(n) {
 		return Math.floor(Math.random() * n);
@@ -84,7 +96,9 @@ pg.Application = function(id) {
 	}
 	var game = new Game($("#game")),
 		salesforceCtrl = new SalesforceCtrl(game),
-		herokuCtrl = new HerokuCtrl(game);
+		herokuCtrl = new HerokuCtrl(game),
+		stopWatch = new StopWatch($("#stopwatch")),
+		$gameStart = $("#game-start");
 
 	init();
 };
@@ -94,6 +108,8 @@ function GameSetting() {
 	this.fieldHeight = function() { return $("#field-height").val();};
 	this.pointCount = function() { return $("#point-count").val();};
 	this.wallCount = function() { return $("#wall-count").val();};
+	this.codingTime = function() { return $("#coding-time").val();};
+	this.gameTurn = function() { return $("#game-turn").val();};
 }
 function Game($el) {
 	function reset(width, height) {
@@ -429,6 +445,7 @@ function SalesforceCtrl(game) {
 			var player = game.getSalesforcePlayer();
 			game.test(player, editor.getCommands());
 		});
+		enableButtons(false);
 	}
 	function isInsertMode() {
 		return $ins.hasClass("btn-success");
@@ -436,14 +453,21 @@ function SalesforceCtrl(game) {
 	function setCommand(text) {
 		editor.setCommand(text, isInsertMode());
 	}
+	function enableButtons(b) {
+		$("#salesforce-buttons").find("button").prop("disabled", !b);
+	}
+	function codingStart() {
+		enableButtons(true);
+	}
 	function getEditor() {
 		return editor;
 	}
-	var editor = new TextEditor($("#salesforce-editor"), true),
+	var editor = new TextEditor($("#salesforce-editor")),
 		$ins = $("#salesforce-ins");
 	init();
 	$.extend(this, {
-		"getEditor": getEditor
+		"getEditor": getEditor,
+		"codingStart": codingStart
 	});
 }
 function HerokuCtrl(game) {
@@ -456,17 +480,21 @@ function HerokuCtrl(game) {
 	function getEditor() {
 		return editor;
 	}
-	var editor = new TextEditor($("#heroku-editor"), false);
+	function codingStart() {
+		editor.readOnly(false);
+	}
+	var editor = new TextEditor($("#heroku-editor"));
 	init();
 	$.extend(this, {
-		"getEditor": getEditor
+		"getEditor": getEditor,
+		"codingStart": codingStart
 	});
 }
-function TextEditor($textarea, bSalesforce) {
+function TextEditor($textarea) {
 	var editor = CodeMirror.fromTextArea($textarea[0], {
 		"mode": "javascript",
 		"lineNumbers": true,
-		"readOnly": bSalesforce,
+		"readOnly": true,
 		"styleActiveLine": true
 	});
 	function setReadOnly(line) {
@@ -532,6 +560,13 @@ function TextEditor($textarea, bSalesforce) {
 		}
 		return ret;
 	}
+	function readOnly(v) {
+		if (v === undefined) {
+			return editor.getOption("readOnly");
+		} else {
+			editor.setOption("readOnly", v);
+		}
+	}
 	function del() {
 		var line = editor.getCursor().line;
 		if (isReadOnly(line)) {
@@ -553,7 +588,8 @@ function TextEditor($textarea, bSalesforce) {
 		"setCommand": setCommand,
 		"del": del,
 		"undo": undo,
-		"getCommands": getCommands
+		"getCommands": getCommands,
+		"readOnly": readOnly
 	});
 }
 function Parser() {
@@ -726,6 +762,37 @@ function Interpreter(context, parser) {
 	}
 	$.extend(this, {
 		"run": run
+	});
+}
+function StopWatch($el) {
+	function show() {
+		var min = Math.floor(second / 60),
+			sec = second % 60,
+			text = ("0" + min).slice(-2) + ":" + ("0" + sec).slice(-2);
+console.log("sw", second, min, sec);
+		$el.text(text);
+	}
+	function countDown() {
+		second--;
+		show();
+		if (second > 0) {
+			setTimeout(countDown, 1000);
+		} else if (callback) {
+			$el.hide();
+			callback();
+		}
+	}
+	function start(sec, func) {
+		$el.show();
+		second = sec;
+		callback = func;
+		show();
+		setTimeout(countDown, 1000);
+	}
+	var second = 0,
+		callback = null;
+	$.extend(this, {
+		"start": start
 	});
 }
 })(jQuery);

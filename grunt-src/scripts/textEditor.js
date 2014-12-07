@@ -1,8 +1,8 @@
-function TextEditor($textarea, bSalesforce) {
+function TextEditor($textarea) {
 	var editor = CodeMirror.fromTextArea($textarea[0], {
 		"mode": "javascript",
 		"lineNumbers": true,
-		"readOnly": bSalesforce,
+		"readOnly": true,
 		"styleActiveLine": true
 	});
 	function setReadOnly(line) {
@@ -68,6 +68,13 @@ function TextEditor($textarea, bSalesforce) {
 		}
 		return ret;
 	}
+	function readOnly(v) {
+		if (v === undefined) {
+			return editor.getOption("readOnly");
+		} else {
+			editor.setOption("readOnly", v);
+		}
+	}
 	function del() {
 		var line = editor.getCursor().line;
 		if (isReadOnly(line)) {
@@ -89,6 +96,7 @@ function TextEditor($textarea, bSalesforce) {
 		"setCommand": setCommand,
 		"del": del,
 		"undo": undo,
-		"getCommands": getCommands
+		"getCommands": getCommands,
+		"readOnly": readOnly
 	});
 }

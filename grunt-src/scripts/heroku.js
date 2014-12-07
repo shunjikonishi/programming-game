@@ -8,9 +8,13 @@ function HerokuCtrl(game) {
 	function getEditor() {
 		return editor;
 	}
-	var editor = new TextEditor($("#heroku-editor"), false);
+	function codingStart() {
+		editor.readOnly(false);
+	}
+	var editor = new TextEditor($("#heroku-editor"));
 	init();
 	$.extend(this, {
-		"getEditor": getEditor
+		"getEditor": getEditor,
+		"codingStart": codingStart
 	});
 }

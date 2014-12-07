@@ -3,12 +3,15 @@ gameSetting=ゲーム設定
 path=ゲームID
 go=Go!
 fieldWidth=フィールドの幅
-fieldHeight=フィールｄの高さ
+fieldHeight=フィールドの高さ
 pointCount=ポイントの数
 wallCount=壁の数
+codingTime=コーディング時間(秒)
+gameTurn=ゲームターン数
 reset=リセット
 entry=参加
 test=テスト
+start=ゲームスタート
 
 ui.pathError=任意のパスを入力してください
 ui.tooManyPlayers=プレイヤーは二人までです。

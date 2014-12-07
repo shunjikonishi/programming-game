@@ -121,3 +121,19 @@
 #salesforce-del {
 	margin-left: 5px;
 }
+
+.field-header {
+	margin: 2px auto;
+	width: 200px;
+}
+
+#game-start {
+	width: 200px;
+}
+
+#stopwatch {
+	width: 200px;
+	font-weight: bold;
+	font-size: 24px;
+	text-align: center;
+}

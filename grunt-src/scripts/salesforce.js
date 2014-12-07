@@ -25,6 +25,7 @@ function SalesforceCtrl(game) {
 			var player = game.getSalesforcePlayer();
 			game.test(player, editor.getCommands());
 		});
+		enableButtons(false);
 	}
 	function isInsertMode() {
 		return $ins.hasClass("btn-success");
@@ -32,13 +33,20 @@ function SalesforceCtrl(game) {
 	function setCommand(text) {
 		editor.setCommand(text, isInsertMode());
 	}
+	function enableButtons(b) {
+		$("#salesforce-buttons").find("button").prop("disabled", !b);
+	}
+	function codingStart() {
+		enableButtons(true);
+	}
 	function getEditor() {
 		return editor;
 	}
-	var editor = new TextEditor($("#salesforce-editor"), true),
+	var editor = new TextEditor($("#salesforce-editor")),
 		$ins = $("#salesforce-ins");
 	init();
 	$.extend(this, {
-		"getEditor": getEditor
+		"getEditor": getEditor,
+		"codingStart": codingStart
 	});
 }

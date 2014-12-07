@@ -30,11 +30,19 @@
 				<th>@Messages("wallCount")</th><td><input type="number" id="wall-count" value="10"/></td>
 			</tr>
 			<tr>
+				<th>@Messages("codingTime")</th><td><input type="number" id="coding-time" value="180"/></td>
+			</tr>
+			<tr>
+				<th>@Messages("gameTurn")</th><td><input type="number" id="game-turn" value="60"/></td>
 			</tr>
 		</table>
 	</div>
 </div>
 <div class="workspace">
+	<div class="field-header">
+		<button id="game-start" class="btn btn-info">@Messages("start")</button>
+		<div id="stopwatch" style="display:none;"></div>
+	</div>
 	<div class="salesforce-side pull-left">
 		<div>
 			<img src="/assets/images/salesforce.png" class="side-icon"/>
@@ -45,7 +53,7 @@
 		</div>
 		<textarea id="salesforce-editor" rows="20"></textarea>
 		<div>
-			<ul class="salesforce-buttons">
+			<ul class="salesforce-buttons" id="salesforce-buttons">
 				<li>
 					<button id="salesforce-up" class="btn">
 						<span class="glyphicon glyphicon-circle-arrow-up" aria-hidden="true"></span>
