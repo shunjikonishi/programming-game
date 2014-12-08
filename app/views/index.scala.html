@@ -1,18 +1,16 @@
-@(id: String)
+@(host: String, id: String)
 
 @main {
 <h1>@Messages("title")</h1>
-@Messages("path"): <input id="gameId" value="@id" size="40"/>
+<p>@Messages("pathInputMessage")</p>
+http://@host/game/ <input id="gameId" size="40"/>
 <button class="btn primary" id="btnGo">@Messages("go")</button>
 
 <script>
 $(function() {
+	var defaultId = "@id";
 	$("#btnGo").click(function() {
-		var id = $("#gameId").val();
-		if (!id) {
-			alert(MSG.pathError);
-			return;
-		}
+		var id = $("#gameId").val() || defaultId;
 		location.href = "/game/" + id;
 	})
 });

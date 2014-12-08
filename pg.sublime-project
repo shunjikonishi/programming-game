@@ -9,6 +9,15 @@
 				"bower_components",
 				"target"
 			]
+		},
+		{
+			"follow_symlinks": true,
+			"path": "../roomframework-play",
+			"folder_exclude_patterns" : [
+				"node_modules",
+				"bower_components",
+				"target"
+			]
 		}
 	]
 }

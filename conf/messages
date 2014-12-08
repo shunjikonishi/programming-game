@@ -1,13 +1,13 @@
 title=Salesforce vs. Heroku
+pathInputMessage=ゲームに使用するパスを入力してください。空欄の場合は自動生成されます。
 gameSetting=ゲーム設定
-path=ゲームID
 go=Go!
 fieldWidth=フィールドの幅
 fieldHeight=フィールドの高さ
 pointCount=ポイントの数
 wallCount=壁の数
 codingTime=コーディング時間(秒)
-gameTurn=ゲームターン数
+gameTime=ゲーム時間(秒)
 reset=リセット
 entry=参加
 test=テスト

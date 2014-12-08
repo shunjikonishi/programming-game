@@ -92,10 +92,18 @@ pg.Application = function(id) {
 };
 
 function GameSetting() {
-	this.fieldWidth = function() { return $("#field-width").val();};
-	this.fieldHeight = function() { return $("#field-height").val();};
-	this.pointCount = function() { return $("#point-count").val();};
-	this.wallCount = function() { return $("#wall-count").val();};
-	this.codingTime = function() { return $("#coding-time").val();};
-	this.gameTurn = function() { return $("#game-turn").val();};
+	var self = this,
+		names = [
+			"fieldWidth",
+			"fieldHeight",
+			"pointCount",
+			"wallCount",
+			"codingTime",
+			"gameTime"
+		];
+	$.each(names, function(idx, name) {
+		self[name] = (function() {
+			return function() { return $("#" + name).val();};
+		})();
+	});
 }

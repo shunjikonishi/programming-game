@@ -7,9 +7,9 @@ import java.util.UUID
 
 object Application extends Controller {
 
-  def index = Action {
+  def index = Action { implicit request =>
     val id = UUID.randomUUID.toString
-    Ok(views.html.index(id))
+    Ok(views.html.index(request.host, id))
   }
 
   def game(id: String) = Action {
