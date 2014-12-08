@@ -1,7 +1,6 @@
 # Salesforce vs. Heroku
 
-http://salesforce-vs.herokuapp.com/
-
+SalesforceとHerokuの違いをゲームを使って説明します。
 ポイント＆クリックとコーディングのどちらが優れているのか？という闘いです。
 
 ## 概要

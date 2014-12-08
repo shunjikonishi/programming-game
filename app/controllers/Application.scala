@@ -9,7 +9,7 @@ object Application extends Controller {
 
   def index = Action {
     val id = UUID.randomUUID.toString
-    Redirect("/game/" + id)
+    Ok(views.html.index(id))
   }
 
   def game(id: String) = Action {
