@@ -10,12 +10,14 @@ function Field($el, x, y) {
 		}
 	}
 	$.extend(this, {
+		"x": x,
+		"y": y,
 		"hasObject": hasObject,
 		"object": object
 	});
 }
 
-function FieldObject(imageSrc, enterable) {
+function FieldObject(name, imageSrc, enterable) {
 	var $img = $("<img/>");
 	$img.attr("src", imageSrc);
 	$img.addClass("object");
@@ -32,6 +34,7 @@ function FieldObject(imageSrc, enterable) {
 		}
 	}
 	$.extend(this, {
+		"name": function() { return name;},
 		"image": image,
 		"canEnter": canEnter,
 		"visible": visible
@@ -39,9 +42,9 @@ function FieldObject(imageSrc, enterable) {
 }
 
 function Wall() {
-	this.__proto__ = new FieldObject("/assets/images/wall.png", false);
+	this.__proto__ = new FieldObject("wall", "/assets/images/wall.png", false);
 }
 
 function Point() {
-	this.__proto__ = new FieldObject("/assets/images/gold.png", true);
+	this.__proto__ = new FieldObject("point", "/assets/images/gold.png", true);
 }

@@ -1,10 +1,11 @@
-@(id: String)
+@(gameId: String, sessionId: String)
 
 @main {
 <link rel="stylesheet" href="/assets/javascripts/codemirror/lib/codemirror.css">
 <script src="/assets/javascripts/codemirror/lib/codemirror.js"></script>
 <script src="/assets/javascripts/codemirror/mode/javascript/javascript.js"></script>
 <script src="/assets/javascripts/codemirror/addon/selection/active-line.js"></script>
+<script src="/assets/javascripts/roomframework/roomframework.js"></script>
 
 <h1>@Messages("title")</h1>
 <div id="game-setting">
@@ -93,7 +94,7 @@
 <script src="/assets/javascripts/app.js"></script>
 <script>
 $(function() {
-	var app = new pg.Application("@id");
+	var app = new pg.Application("@gameId", "@sessionId");
 });
 </script>
 }

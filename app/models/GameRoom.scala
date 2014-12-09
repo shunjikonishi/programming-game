@@ -4,7 +4,25 @@ import roomframework.room.DefaultRoom
 import play.api.libs.json._
 
 class GameRoom(name: String) extends DefaultRoom(name) {
-  private var gameStatus: Option[GameStatus] = None
+  private var status_ : Option[GameStatus] = None
+
+  def status = status_
+  def status_=(v: GameStatus) = {
+    actor ! UpdateGameStatus(v)
+  }
+
+  override def createActor = new GameActor()
+
+  protected class GameActor extends RoomActor {
+    override def receive = {
+      case UpdateGameStatus(v) =>
+        status_ = Some(v)
+      case x => super.receive(x)
+    }
+
+  }
+
+  private case class UpdateGameStatus(status: GameStatus)
 }
 
 case class Player(x: Int, y: Int, sessionId: Option[String]) {
@@ -24,9 +42,9 @@ object Player {
   }
 }
 
-case class FieldObject(kind: String, x: Int, y: Int) {
+case class FieldObject(name: String, x: Int, y: Int) {
   def toJson = JsObject(Seq(
-    "kind" -> JsString(kind),
+    "name" -> JsString(name),
     "x" -> JsNumber(x),
     "y" -> JsNumber(y)
   ))
@@ -35,7 +53,7 @@ case class FieldObject(kind: String, x: Int, y: Int) {
 object FieldObject {
   def fromJson(json: JsValue) = {
     FieldObject(
-      kind = (json \ "kind").as[String],
+      name = (json \ "name").as[String],
       x = (json \ "x").as[Int],
       y = (json \ "y").as[Int]
     )
@@ -49,7 +67,16 @@ case class GameSetting(
   wallCount: Int,
   codingTime: Int,
   gameTime: Int
-)
+) {
+  def toJson = JsObject(Seq(
+    "fieldWidth" -> JsNumber(fieldWidth),
+    "fieldHeight" -> JsNumber(fieldHeight),
+    "pointCount" -> JsNumber(pointCount),
+    "wallCount" -> JsNumber(wallCount),
+    "codingTime" -> JsNumber(codingTime),
+    "gameTime" -> JsNumber(gameTime)
+  ))
+}
 
 object GameSetting {
   def fromJson(json: JsValue) = {
@@ -70,7 +97,15 @@ case class GameStatus(
   heroku: Player,
   bug: Player,
   fields: Seq[FieldObject]
-)
+) {
+  def toJson = JsObject(Seq(
+    "setting" -> setting.toJson,
+    "salesforce" -> salesforce.toJson,
+    "heroku" -> heroku.toJson,
+    "bug" -> bug.toJson,
+    "fields" -> JsArray(fields.map(_.toJson))
+  ))
+}
 
 object GameStatus {
   def fromJson(json: JsValue) = {
@@ -80,8 +115,10 @@ object GameStatus {
       heroku = Player.fromJson(json \ "heroku"),
       bug = Player.fromJson(json \ "bug"),
       fields = (json \ "fields") match {
-        case JsArray(seq) => seq.map(FieldObject.fromJson(_))
-        case _ => throw new IllegalArgumentException()
+        case JsArray(seq) => 
+          seq.map(FieldObject.fromJson(_))
+        case _ => 
+          throw new IllegalArgumentException()
       }
     )
   }

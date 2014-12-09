@@ -1,7 +1,7 @@
 function HerokuCtrl(game) {
 	function init() {
 		$("#heroku-test").click(function() {
-			var player = game.getHerokuPlayer();
+			var player = game.getHeroku();
 			game.test(player, editor.getCommands());
 		});
 	}

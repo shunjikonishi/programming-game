@@ -22,7 +22,7 @@ function SalesforceCtrl(game) {
 			editor.undo();
 		});
 		$("#salesforce-test").click(function() {
-			var player = game.getSalesforcePlayer();
+			var player = game.getSalesforce();
 			game.test(player, editor.getCommands());
 		});
 		enableButtons(false);

@@ -4,28 +4,32 @@ import play.api._
 import play.api.mvc._
 import play.api.i18n.MessagesPlugin;
 import java.util.UUID
+import models.GameManager
+import models.GameHandler
 
 object Application extends Controller {
 
   def index = Action { implicit request =>
-    val id = UUID.randomUUID.toString
-    Ok(views.html.index(request.host, id))
+    val gameId = UUID.randomUUID.toString
+    val sessionId = request.session.get("sessionId").getOrElse(UUID.randomUUID.toString)
+    Ok(views.html.index(request.host, gameId)).withSession(
+      "sessionId" -> sessionId
+    )
   }
 
-  def game(id: String) = Action {
-    Ok(views.html.game(id))
+  def game(gameId: String) = Action { implicit request =>
+    val sessionId = request.session.get("sessionId").getOrElse(UUID.randomUUID.toString)
+    Ok(views.html.game(gameId, sessionId)).withSession(
+      "sessionId" -> sessionId
+    )
   }
 
-  def ws(id: String) = Action {
-    Ok("WS")
-  }
-  /*
-  def ws = WebSocket.using[String] { implicit request =>
-    val sessionId = request.cookies.get(AppConfig.cookieName).map(_.value).getOrElse(throw new IllegalStateException())
-    val h = pm.console(sessionId)
+  def ws(gameId: String) = WebSocket.using[String] { implicit request =>
+    val sessionId = request.session("sessionId")
+    val room = GameManager.join(gameId)
+    val h = new GameHandler(room)
     (h.in, h.out)
   }
-  */
 
   def messages(lang: String) = Action { implicit request =>
     val map = Play.current.plugin[MessagesPlugin]

@@ -15,6 +15,9 @@ function Game($el) {
 				line.push(new Field($field, x, y));
 			}
 		}
+		$.each(getPlayers(), function(idx, player) {
+			player.reset(-1, -1);
+		});
 		$el.show();
 	}
 	function field(x, y) {
@@ -30,36 +33,36 @@ function Game($el) {
 		}
 		return ret;
 	}
-	function addPlayer(player) {
-		if (players.length === 2) {
-			showError(MSG.tooManyPlayers);
-		}
-		players.push(player);
-		$el.append(player.element());
-	}
-	function getPlayers() {
-		return players.slice(0);
-	}
-	function getPlayer(method) {
-		var ret = null;
-		$.each(players,function(idx, p) {
-			if (p[method]()) {
-				ret = p;
+	function hasPlayer(x, y) {
+		var players = getPlayers();
+		for (var i=0; i<players.length; i++) {
+			var pos =players[i].pos();
+			if (pos.x === x && pos.y === y) {
+				return true;
 			}
-		});
+		}
+		return false;
+	}
+	function createPlayer(imageSrc) {
+		var ret = new Player(imageSrc, -1, -1);
+		$el.append(ret.element());
 		return ret;
 	}
-	function isSalesforceEntried() {
-		return !!getPlayer("isSalesforce");
+	function getPlayers() {
+		var ret = [];
+		ret.push(salesforce);
+		ret.push(heroku);
+		ret.push(bug);
+		return ret;
 	}
-	function isHerokuEntried() {
-		return !!getPlayer("isHeroku");
+	function getSalesforce() {
+		return salesforce;
 	}
-	function getSalesforcePlayer() {
-		return getPlayer("isSalesforce");
+	function getHeroku() {
+		return heroku;
 	}
-	function getHerokuPlayer() {
-		return getPlayer("isHeroku");
+	function getBug() {
+		return bug;
 	}
 	function runCommand(player, command) {
 		var pos = player.pos(),
@@ -145,16 +148,18 @@ function Game($el) {
 	}
 	var self = this,
 		fields = [],
-		players = [];
+		salesforce = createPlayer("/assets/images/salesforce.png"),
+		heroku = createPlayer("/assets/images/heroku.png"),
+		bug = createPlayer("/assets/images/bug.png");
 	$.extend(this, {
 		"field": field,
-		"addPlayer": addPlayer,
+		"allFields": allFields,
 		"reset": reset,
 		"getPlayers": getPlayers,
-		"getSalesforcePlayer": getSalesforcePlayer,
-		"getHerokuPlayer": getHerokuPlayer,
-		"isSalesforceEntried": isSalesforceEntried,
-		"isHerokuEntried": isHerokuEntried,
+		"hasPlayer": hasPlayer,
+		"getSalesforce": getSalesforce,
+		"getHeroku": getHeroku,
+		"getBug": getBug,
 		"test": test
 	});
 }

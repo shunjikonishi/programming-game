@@ -10,34 +10,21 @@ function showError(msg) {
 }
 
 
-pg.Application = function(id) {
+pg.Application = function(gameId, sessionId) {
 	function init() {
+		initConnection(con);
 		$("#game-gen").click(function() {
-			var setting = new GameSetting();
-			game.reset(setting.fieldWidth(), setting.fieldHeight());
-			generateObject(setting.wallCount(), Wall);
-			generateObject(setting.wallCount(), Point);
-			$.each(game.getPlayers(), function(idx, p) {
-				var pos = randomPos();
-				p.reset(pos.x, pos.y);
-			});
-			resetEditors();
-		}).click();
+			initGame();
+		});
 		$("#toggle-setting").click(function() {
 			$("#game-setting-table").toggle();
 		});
 		$("#salesforce-entry").click(function() {
-			if (game.isSalesforceEntried()) {
-				return;
-			}
-			entry("/assets/images/salesforce.png");
+			//ToDo
 			$(this).prop("disabled", true);
 		});
 		$("#heroku-entry").click(function() {
-			if (game.isHerokuEntried()) {
-				return;
-			}
-			entry("/assets/images/heroku.png");
+			//ToDo
 			$(this).prop("disabled", true);
 		});
 		$gameStart.click(function() {
@@ -45,10 +32,73 @@ pg.Application = function(id) {
 			codingStart();
 			stopWatch.start(new GameSetting().codingTime(), executeStart());
 		});
-
-		//For test
-		$("#salesforce-entry").click();
-		$("#heroku-entry").click();
+	}
+	function initConnection(con) {
+		con.on("initGame", function(data) {
+			console.log("initGame", data);
+		});
+		con.request({
+			"command": "status",
+			"success": function(data) {
+				if (data.status) {
+					updateStatus(data.status);
+				} else {
+					initGame();
+				}
+			}
+		});
+	}
+	function initGame() {
+		var setting = new GameSetting();
+		game.reset(setting.fieldWidth(), setting.fieldHeight());
+		generateObject(setting.wallCount(), Wall);
+		generateObject(setting.wallCount(), Point);
+		$.each(game.getPlayers(), function(idx, p) {
+			var pos = randomPos(true);
+			p.reset(pos.x, pos.y);
+		});
+		resetEditors();
+		var json = {
+			"sessionId": sessionId,
+			"status": {
+				"setting": setting.toJson(),
+				"salesforce": game.getSalesforce().toJson(),
+				"heroku": game.getHeroku().toJson(),
+				"bug": game.getBug().toJson(),
+				"fields": []
+			}
+		};
+		$.each(game.allFields(), function(idx, f) {
+			if (f.hasObject()) {
+				json.status.fields.push({
+					"name": f.object().name(),
+					"x": f.x,
+					"y": f.y
+				});
+			}
+		});
+		con.request({
+			"command": "initGame",
+			"data": json
+		});
+	}
+	function updateStatus(status) {
+		function resetPlayerPos(player, pos) {
+			player.reset(pos.x, pos.y);
+		}
+		var setting = new GameSetting();
+		setting.update(status.setting);
+		game.reset(setting.fieldWidth(), setting.fieldHeight());
+		$.each(status.fields, function(idx, f) {
+			if (f.name === "wall") {
+				game.field(f.x, f.y).object(new Wall());
+			} else if (f.name === "point") {
+				game.field(f.x, f.y).object(new Point());
+			}
+		});
+		resetPlayerPos(game.getSalesforce(), status.salesforce);
+		resetPlayerPos(game.getHeroku(), status.heroku);
+		resetPlayerPos(game.getBug(), status.bug);
 	}
 	function codingStart() {
 		salesforceCtrl.codingStart();
@@ -60,12 +110,12 @@ pg.Application = function(id) {
 	function random(n) {
 		return Math.floor(Math.random() * n);
 	}
-	function randomPos() {
+	function randomPos(checkPlayerPos) {
 		while (true) {
 			var x = random(game.width),
 				y = random(game.height),
 				field = game.field(x, y);
-			if (!field.hasObject()) {
+			if (!field.hasObject() && (!checkPlayerPos || !game.hasPlayer(x, y))) {
 				return {
 					"x": x,
 					"y": y
@@ -75,14 +125,9 @@ pg.Application = function(id) {
 	}
 	function generateObject(cnt, Func) {
 		for (var i=0; i<cnt; i++) {
-			var pos = randomPos();
+			var pos = randomPos(false);
 			game.field(pos.x, pos.y).object(new Func());
 		}
-	}
-	function entry(imageSrc) {
-		var pos = randomPos();
-		game.addPlayer(new Player(imageSrc, pos.x, pos.y));
-		resetEditors();
 	}
 	function resetEditors() {
 		$.each(game.getPlayers(), function(idx, p) {
@@ -94,7 +139,8 @@ pg.Application = function(id) {
 			}
 		});
 	}
-	var game = new Game($("#game")),
+	var con = new room.Connection(location.protocol.replace("http", "ws") + location.host + "/ws/" + gameId),
+		game = new Game($("#game")),
 		salesforceCtrl = new SalesforceCtrl(game),
 		herokuCtrl = new HerokuCtrl(game),
 		stopWatch = new StopWatch($("#stopwatch")),
@@ -103,22 +149,7 @@ pg.Application = function(id) {
 	init();
 };
 
-function GameSetting() {
-	var self = this,
-		names = [
-			"fieldWidth",
-			"fieldHeight",
-			"pointCount",
-			"wallCount",
-			"codingTime",
-			"gameTime"
-		];
-	$.each(names, function(idx, name) {
-		self[name] = (function() {
-			return function() { return $("#" + name).val();};
-		})();
-	});
-}
+
 function Game($el) {
 	function reset(width, height) {
 		self.width = width;
@@ -136,6 +167,9 @@ function Game($el) {
 				line.push(new Field($field, x, y));
 			}
 		}
+		$.each(getPlayers(), function(idx, player) {
+			player.reset(-1, -1);
+		});
 		$el.show();
 	}
 	function field(x, y) {
@@ -151,36 +185,36 @@ function Game($el) {
 		}
 		return ret;
 	}
-	function addPlayer(player) {
-		if (players.length === 2) {
-			showError(MSG.tooManyPlayers);
-		}
-		players.push(player);
-		$el.append(player.element());
-	}
-	function getPlayers() {
-		return players.slice(0);
-	}
-	function getPlayer(method) {
-		var ret = null;
-		$.each(players,function(idx, p) {
-			if (p[method]()) {
-				ret = p;
+	function hasPlayer(x, y) {
+		var players = getPlayers();
+		for (var i=0; i<players.length; i++) {
+			var pos =players[i].pos();
+			if (pos.x === x && pos.y === y) {
+				return true;
 			}
-		});
+		}
+		return false;
+	}
+	function createPlayer(imageSrc) {
+		var ret = new Player(imageSrc, -1, -1);
+		$el.append(ret.element());
 		return ret;
 	}
-	function isSalesforceEntried() {
-		return !!getPlayer("isSalesforce");
+	function getPlayers() {
+		var ret = [];
+		ret.push(salesforce);
+		ret.push(heroku);
+		ret.push(bug);
+		return ret;
 	}
-	function isHerokuEntried() {
-		return !!getPlayer("isHeroku");
+	function getSalesforce() {
+		return salesforce;
 	}
-	function getSalesforcePlayer() {
-		return getPlayer("isSalesforce");
+	function getHeroku() {
+		return heroku;
 	}
-	function getHerokuPlayer() {
-		return getPlayer("isHeroku");
+	function getBug() {
+		return bug;
 	}
 	function runCommand(player, command) {
 		var pos = player.pos(),
@@ -266,21 +300,62 @@ function Game($el) {
 	}
 	var self = this,
 		fields = [],
-		players = [];
+		salesforce = createPlayer("/assets/images/salesforce.png"),
+		heroku = createPlayer("/assets/images/heroku.png"),
+		bug = createPlayer("/assets/images/bug.png");
 	$.extend(this, {
 		"field": field,
-		"addPlayer": addPlayer,
+		"allFields": allFields,
 		"reset": reset,
 		"getPlayers": getPlayers,
-		"getSalesforcePlayer": getSalesforcePlayer,
-		"getHerokuPlayer": getHerokuPlayer,
-		"isSalesforceEntried": isSalesforceEntried,
-		"isHerokuEntried": isHerokuEntried,
+		"hasPlayer": hasPlayer,
+		"getSalesforce": getSalesforce,
+		"getHeroku": getHeroku,
+		"getBug": getBug,
 		"test": test
 	});
 }
 
 
+function GameSetting() {
+	function update(setting) {
+		$.each(setting, function(key, value) {
+			self[key](value);
+		});
+	}
+	function toJson() {
+		var ret = {};
+		$.each(names, function(idx, name) {
+			ret[name] = self[name]();
+		});
+		return ret;
+	}
+	var self = this,
+		names = [
+			"fieldWidth",
+			"fieldHeight",
+			"pointCount",
+			"wallCount",
+			"codingTime",
+			"gameTime"
+		];
+	$.each(names, function(idx, name) {
+		self[name] = (function() {
+			return function(v) { 
+				var $el = $("#" + name);
+				if (v === undefined) {
+					return parseInt($el.val(), 10);
+				} else {
+					$el.val(v);
+				}
+			};
+		})();
+	});
+	$.extend(this, {
+		"update": update,
+		"toJson": toJson
+	});
+}
 function Field($el, x, y) {
 	var obj = null;
 	function hasObject() { return !!obj;}
@@ -293,12 +368,14 @@ function Field($el, x, y) {
 		}
 	}
 	$.extend(this, {
+		"x": x,
+		"y": y,
 		"hasObject": hasObject,
 		"object": object
 	});
 }
 
-function FieldObject(imageSrc, enterable) {
+function FieldObject(name, imageSrc, enterable) {
 	var $img = $("<img/>");
 	$img.attr("src", imageSrc);
 	$img.addClass("object");
@@ -315,6 +392,7 @@ function FieldObject(imageSrc, enterable) {
 		}
 	}
 	$.extend(this, {
+		"name": function() { return name;},
 		"image": image,
 		"canEnter": canEnter,
 		"visible": visible
@@ -322,11 +400,11 @@ function FieldObject(imageSrc, enterable) {
 }
 
 function Wall() {
-	this.__proto__ = new FieldObject("/assets/images/wall.png", false);
+	this.__proto__ = new FieldObject("wall", "/assets/images/wall.png", false);
 }
 
 function Point() {
-	this.__proto__ = new FieldObject("/assets/images/gold.png", true);
+	this.__proto__ = new FieldObject("point", "/assets/images/gold.png", true);
 }
 function Player(imageSrc, initialX, initialY) {
 	function init() {
@@ -347,10 +425,10 @@ function Player(imageSrc, initialX, initialY) {
 	}
 	function reset(nx, ny) {
 		commands = [];
-		if (nx) {
+		if (nx !== undefined) {
 			initialX = nx;
 		}
-		if (ny) {
+		if (ny !== undefined) {
 			initialY = ny;
 		} 
 		pos(initialX, initialY);
@@ -406,8 +484,25 @@ function Player(imageSrc, initialX, initialY) {
 	function down(n) {
 		move("down", n);
 	}
+	function entry(v) {
+		sessionId = v;
+	}
+	function getSessionId() {
+		return sessionId;
+	}
+	function toJson() {
+		var ret = {
+			"x": x,
+			"y": y
+		};
+		if (sessionId) {
+			ret.sessionId = sessionId;
+		}
+		return ret;
+	}
 	var x, y,
 		$div = $("<div/>"),
+		sessionId = null,
 		commands = [];
 
 	$.extend(this, {
@@ -422,7 +517,10 @@ function Player(imageSrc, initialX, initialY) {
 		"left": left,
 		"right": right,
 		"up": up,
-		"down": down
+		"down": down,
+		"getSessionId": getSessionId,
+		"entry": entry,
+		"toJson": toJson
 	});
 	init();
 }
@@ -450,7 +548,7 @@ function SalesforceCtrl(game) {
 			editor.undo();
 		});
 		$("#salesforce-test").click(function() {
-			var player = game.getSalesforcePlayer();
+			var player = game.getSalesforce();
 			game.test(player, editor.getCommands());
 		});
 		enableButtons(false);
@@ -481,7 +579,7 @@ function SalesforceCtrl(game) {
 function HerokuCtrl(game) {
 	function init() {
 		$("#heroku-test").click(function() {
-			var player = game.getHerokuPlayer();
+			var player = game.getHeroku();
 			game.test(player, editor.getCommands());
 		});
 	}
@@ -777,7 +875,6 @@ function StopWatch($el) {
 		var min = Math.floor(second / 60),
 			sec = second % 60,
 			text = ("0" + min).slice(-2) + ":" + ("0" + sec).slice(-2);
-console.log("sw", second, min, sec);
 		$el.text(text);
 	}
 	function countDown() {

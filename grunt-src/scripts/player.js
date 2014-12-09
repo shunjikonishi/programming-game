@@ -17,10 +17,10 @@ function Player(imageSrc, initialX, initialY) {
 	}
 	function reset(nx, ny) {
 		commands = [];
-		if (nx) {
+		if (nx !== undefined) {
 			initialX = nx;
 		}
-		if (ny) {
+		if (ny !== undefined) {
 			initialY = ny;
 		} 
 		pos(initialX, initialY);
@@ -76,8 +76,25 @@ function Player(imageSrc, initialX, initialY) {
 	function down(n) {
 		move("down", n);
 	}
+	function entry(v) {
+		sessionId = v;
+	}
+	function getSessionId() {
+		return sessionId;
+	}
+	function toJson() {
+		var ret = {
+			"x": x,
+			"y": y
+		};
+		if (sessionId) {
+			ret.sessionId = sessionId;
+		}
+		return ret;
+	}
 	var x, y,
 		$div = $("<div/>"),
+		sessionId = null,
 		commands = [];
 
 	$.extend(this, {
@@ -92,7 +109,10 @@ function Player(imageSrc, initialX, initialY) {
 		"left": left,
 		"right": right,
 		"up": up,
-		"down": down
+		"down": down,
+		"getSessionId": getSessionId,
+		"entry": entry,
+		"toJson": toJson
 	});
 	init();
 }
