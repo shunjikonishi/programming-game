@@ -20,6 +20,7 @@ module.exports = function(grunt) {
                     "grunt-src/scripts/common.js",
                     "grunt-src/scripts/application.js",
                     "grunt-src/scripts/game.js",
+                    "grunt-src/scripts/gameSetting.js",
                     "grunt-src/scripts/field.js",
                     "grunt-src/scripts/player.js",
                     "grunt-src/scripts/salesforce.js",
