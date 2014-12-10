@@ -6,6 +6,14 @@
 	border-right: 1px solid #000;
 }
 
+#bug-test {
+	position: relative;
+	display: block;
+	margin: 10px auto;
+	padding: 0;
+	width: 200px;
+}
+
 #game-setting th, #game-setting td {
 	padding: 4px;
 }

@@ -27,7 +27,7 @@ object Application extends Controller {
   def ws(gameId: String) = WebSocket.using[String] { implicit request =>
     val sessionId = request.session("sessionId")
     val room = GameManager.join(gameId)
-    val h = new GameHandler(room)
+    val h = new GameHandler(room, sessionId)
     (h.in, h.out)
   }
 

@@ -1,19 +1,20 @@
 pg.Application = function(gameId, sessionId) {
 	function init() {
 		initConnection(con);
-		$("#game-gen").click(function() {
-			initGame();
-		});
 		$("#toggle-setting").click(function() {
 			$("#game-setting-table").toggle();
 		});
-		$("#salesforce-entry").click(function() {
-			//ToDo
-			$(this).prop("disabled", true);
+		$("#bug-test").click(function() {
+			game.bugTest(new GameSetting().gameTime());
 		});
-		$("#heroku-entry").click(function() {
-			//ToDo
-			$(this).prop("disabled", true);
+		$gameGen.click(function() {
+			initGame();
+		});
+		$salesforceEntry.click(function() {
+			entry("salesforce");
+		});
+		$herokuEntry.click(function() {
+			entry("heroku");
 		});
 		$gameStart.click(function() {
 			$gameStart.hide();
@@ -22,9 +23,18 @@ pg.Application = function(gameId, sessionId) {
 		});
 	}
 	function initConnection(con) {
+		con.sendNoop(30);
 		con.on("initGame", function(data) {
-			console.log("initGame", data);
+			updateStatus(data.status);
 		});
+		con.on("alert", function(data) {
+			alert(data);
+		});
+		con.on("change", function(data) {
+			var ctrl = data.name === "salesforce" ? salesforceCtrl : herokuCtrl;
+			ctrl.getEditor().applyChange(data);
+		});
+		con.on("playerStatus", updatePlayerStatus);
 		con.request({
 			"command": "status",
 			"success": function(data) {
@@ -32,6 +42,7 @@ pg.Application = function(gameId, sessionId) {
 					updateStatus(data.status);
 				} else {
 					initGame();
+					updateButtons();
 				}
 			}
 		});
@@ -45,7 +56,6 @@ pg.Application = function(gameId, sessionId) {
 			var pos = randomPos(true);
 			p.reset(pos.x, pos.y);
 		});
-		resetEditors();
 		var json = {
 			"sessionId": sessionId,
 			"status": {
@@ -71,8 +81,9 @@ pg.Application = function(gameId, sessionId) {
 		});
 	}
 	function updateStatus(status) {
-		function resetPlayerPos(player, pos) {
-			player.reset(pos.x, pos.y);
+		function resetPlayer(cp, sp) {
+			cp.entry(sp.sessionId || null);
+			cp.reset(sp.x, sp.y);
 		}
 		var setting = new GameSetting();
 		setting.update(status.setting);
@@ -84,9 +95,48 @@ pg.Application = function(gameId, sessionId) {
 				game.field(f.x, f.y).object(new Point());
 			}
 		});
-		resetPlayerPos(game.getSalesforce(), status.salesforce);
-		resetPlayerPos(game.getHeroku(), status.heroku);
-		resetPlayerPos(game.getBug(), status.bug);
+		resetPlayer(game.getSalesforce(), status.salesforce);
+		resetPlayer(game.getHeroku(), status.heroku);
+		resetPlayer(game.getBug(), status.bug);
+		updateButtons();
+	}
+	function updatePlayerStatus(ps) {
+		var player = game.getPlayer(ps.player);
+		if (player) {
+			player.entry(ps.sessionId);
+		}
+		updateButtons();
+	}
+	function entry(name) {
+		con.request({
+			"command": "entry",
+			"data": {
+				"player": name,
+				"sessionId": sessionId
+			}
+		});
+	}
+	function updateButtons() {
+		function updateEntryButton($btn, player) {
+console.log("updateEntryButton", $btn, player.isEntried());
+			$btn.prop("disabled", player.isEntried());
+			if (player.getSessionId() === sessionId) {
+				$btn.text(MSG.yourEntry);
+			} else if (player.isEntried()) {
+				$btn.text(MSG.entried);
+			} else {
+				$btn.text(MSG.entry);
+			}
+		}
+		var s = game.getSalesforce(),
+			h = game.getHeroku(),
+			entried = s.getSessionId() === sessionId || h.getSessionId() === sessionId;
+		$gameGen.prop("disabled", !entried);
+		$("#game-setting-table").find(":input").prop("disabled", !entried);
+		$gameStart.prop("disabled", !entried);
+		updateEntryButton($salesforceEntry, s);
+		updateEntryButton($herokuEntry, h);
+		resetEditors();
 	}
 	function codingStart() {
 		salesforceCtrl.codingStart();
@@ -128,10 +178,13 @@ pg.Application = function(gameId, sessionId) {
 		});
 	}
 	var con = new room.Connection(location.protocol.replace("http", "ws") + location.host + "/ws/" + gameId),
-		game = new Game($("#game")),
-		salesforceCtrl = new SalesforceCtrl(game),
-		herokuCtrl = new HerokuCtrl(game),
+		game = new Game($("#game"), sessionId),
+		salesforceCtrl = new SalesforceCtrl(game, con),
+		herokuCtrl = new HerokuCtrl(game, con),
 		stopWatch = new StopWatch($("#stopwatch")),
+		$gameGen = $("#game-gen"),
+		$salesforceEntry = $("#salesforce-entry"),
+		$herokuEntry = $("#heroku-entry"),
 		$gameStart = $("#game-start");
 
 	init();

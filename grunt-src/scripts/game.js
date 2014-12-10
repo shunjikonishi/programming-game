@@ -1,4 +1,4 @@
-function Game($el) {
+function Game($el, sessionId) {
 	function reset(width, height) {
 		self.width = width;
 		self.height = height;
@@ -6,10 +6,10 @@ function Game($el) {
 		fields = [];
 		$el.width(width * FIELD_SIZE);
 		$el.height(height * FIELD_SIZE);
-		for (var x=0; x<width; x++) {
+		for (var y=0; y<height; y++) {
 			var line = [];
 			fields.push(line);
-			for (var y=0; y<height; y++) {
+			for (var x=0; x<width; x++) {
 				var $field = $("<div class='field'/>");
 				$el.append($field);
 				line.push(new Field($field, x, y));
@@ -18,7 +18,6 @@ function Game($el) {
 		$.each(getPlayers(), function(idx, player) {
 			player.reset(-1, -1);
 		});
-		$el.show();
 	}
 	function field(x, y) {
 		return fields[y][x];
@@ -32,6 +31,9 @@ function Game($el) {
 			}
 		}
 		return ret;
+	}
+	function getSessionId() {
+		return sessionId;
 	}
 	function hasPlayer(x, y) {
 		var players = getPlayers();
@@ -63,6 +65,14 @@ function Game($el) {
 	}
 	function getBug() {
 		return bug;
+	}
+	function getPlayer(name) {
+		switch (name) {
+			case "salesforce": return salesforce;
+			case "heroku": return heroku;
+			case "bug": return bug;
+		}
+		throw "Invaid name: " + name;
 	}
 	function runCommand(player, command) {
 		var pos = player.pos(),
@@ -105,7 +115,9 @@ function Game($el) {
 			var obj = field(pos.x, pos.y).object();
 			if (obj) {
 				if (obj.canEnter()) {
-					obj.visible(false);
+					if (!player.isBug()) {
+						obj.visible(false);
+					}
 				} else {
 					wait = true;
 				}
@@ -146,21 +158,40 @@ function Game($el) {
 		});
 		run();
 	}
+	function bugTest(cnt) {
+		function run() {
+			setTimeout(function() {
+console.log("bugTest", cnt);
+				if (cnt > 0) {
+					runCommand(bug, bug.nextCommand());
+					run();
+				} else {
+					bug.reset();
+				}
+				cnt--;
+			}, 200);
+		}
+		run();
+	}
 	var self = this,
 		fields = [],
 		salesforce = createPlayer("/assets/images/salesforce.png"),
 		heroku = createPlayer("/assets/images/heroku.png"),
-		bug = createPlayer("/assets/images/bug.png");
+		bug = new Bug(this);
+	$el.append(bug.element());
 	$.extend(this, {
 		"field": field,
 		"allFields": allFields,
 		"reset": reset,
 		"getPlayers": getPlayers,
 		"hasPlayer": hasPlayer,
+		"getPlayer": getPlayer,
 		"getSalesforce": getSalesforce,
 		"getHeroku": getHeroku,
 		"getBug": getBug,
-		"test": test
+		"getSessionId": getSessionId,
+		"test": test,
+		"bugTest": bugTest
 	});
 }
 

@@ -1,10 +1,4 @@
-function TextEditor($textarea) {
-	var editor = CodeMirror.fromTextArea($textarea[0], {
-		"mode": "javascript",
-		"lineNumbers": true,
-		"readOnly": true,
-		"styleActiveLine": true
-	});
+function TextEditor(name, $textarea, con) {
 	function setReadOnly(line) {
 		editor.markText({
 			"line": line,
@@ -91,9 +85,56 @@ function TextEditor($textarea) {
 	function undo() {
 		editor.undo();
 	}
+	function onChange(instance, change) {
+		console.log("onChange", change);
+		var data = {
+			"name": name,
+			"from": {
+				"line": change.from.line,
+				"ch": change.from.ch
+			},
+			"to": {
+				"line": change.to.line,
+				"ch": change.to.ch
+			},
+			"text": change.text
+		};
+		con.request({
+			"command": "change",
+			"data": data
+		});
+	}
+	function setChangeHandling(b) {
+		if (b) {
+			editor.on("change", onChange);
+		} else {
+			editor.off("change", onChange);
+		}
+	}
+	function applyChange(change) {
+		editor.replaceRange(change.text.join("\n"), {
+			"line": change.from.line,
+			"ch": change.from.ch
+		}, {
+			"line": change.to.line,
+			"ch": change.to.ch
+		});
+		editor.setSelection({
+			"line": change.to.line,
+			"ch": change.to.ch
+		});
+	}
+	var editor = CodeMirror.fromTextArea($textarea[0], {
+		"mode": "javascript",
+		"lineNumbers": true,
+		"readOnly": true,
+		"styleActiveLine": true
+	});
 	$.extend(this, {
 		"reset": reset,
 		"setCommand": setCommand,
+		"setChangeHandling": setChangeHandling,
+		"applyChange": applyChange,
 		"del": del,
 		"undo": undo,
 		"getCommands": getCommands,

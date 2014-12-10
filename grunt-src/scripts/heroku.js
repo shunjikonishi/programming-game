@@ -1,4 +1,4 @@
-function HerokuCtrl(game) {
+function HerokuCtrl(game, con) {
 	function init() {
 		$("#heroku-test").click(function() {
 			var player = game.getHeroku();
@@ -9,9 +9,11 @@ function HerokuCtrl(game) {
 		return editor;
 	}
 	function codingStart() {
-		editor.readOnly(false);
+		var b = game.getSessionId() === game.getHeroku().getSessionId();
+		editor.readOnly(!b);
+		editor.setChangeHandling(b);
 	}
-	var editor = new TextEditor($("#heroku-editor"));
+	var editor = new TextEditor("heroku", $("#heroku-editor"), con);
 	init();
 	$.extend(this, {
 		"getEditor": getEditor,

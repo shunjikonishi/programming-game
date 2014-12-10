@@ -13,19 +13,20 @@ function showError(msg) {
 pg.Application = function(gameId, sessionId) {
 	function init() {
 		initConnection(con);
-		$("#game-gen").click(function() {
-			initGame();
-		});
 		$("#toggle-setting").click(function() {
 			$("#game-setting-table").toggle();
 		});
-		$("#salesforce-entry").click(function() {
-			//ToDo
-			$(this).prop("disabled", true);
+		$("#bug-test").click(function() {
+			game.bugTest(new GameSetting().gameTime());
 		});
-		$("#heroku-entry").click(function() {
-			//ToDo
-			$(this).prop("disabled", true);
+		$gameGen.click(function() {
+			initGame();
+		});
+		$salesforceEntry.click(function() {
+			entry("salesforce");
+		});
+		$herokuEntry.click(function() {
+			entry("heroku");
 		});
 		$gameStart.click(function() {
 			$gameStart.hide();
@@ -34,9 +35,18 @@ pg.Application = function(gameId, sessionId) {
 		});
 	}
 	function initConnection(con) {
+		con.sendNoop(30);
 		con.on("initGame", function(data) {
-			console.log("initGame", data);
+			updateStatus(data.status);
 		});
+		con.on("alert", function(data) {
+			alert(data);
+		});
+		con.on("change", function(data) {
+			var ctrl = data.name === "salesforce" ? salesforceCtrl : herokuCtrl;
+			ctrl.getEditor().applyChange(data);
+		});
+		con.on("playerStatus", updatePlayerStatus);
 		con.request({
 			"command": "status",
 			"success": function(data) {
@@ -44,6 +54,7 @@ pg.Application = function(gameId, sessionId) {
 					updateStatus(data.status);
 				} else {
 					initGame();
+					updateButtons();
 				}
 			}
 		});
@@ -57,7 +68,6 @@ pg.Application = function(gameId, sessionId) {
 			var pos = randomPos(true);
 			p.reset(pos.x, pos.y);
 		});
-		resetEditors();
 		var json = {
 			"sessionId": sessionId,
 			"status": {
@@ -83,8 +93,9 @@ pg.Application = function(gameId, sessionId) {
 		});
 	}
 	function updateStatus(status) {
-		function resetPlayerPos(player, pos) {
-			player.reset(pos.x, pos.y);
+		function resetPlayer(cp, sp) {
+			cp.entry(sp.sessionId || null);
+			cp.reset(sp.x, sp.y);
 		}
 		var setting = new GameSetting();
 		setting.update(status.setting);
@@ -96,9 +107,48 @@ pg.Application = function(gameId, sessionId) {
 				game.field(f.x, f.y).object(new Point());
 			}
 		});
-		resetPlayerPos(game.getSalesforce(), status.salesforce);
-		resetPlayerPos(game.getHeroku(), status.heroku);
-		resetPlayerPos(game.getBug(), status.bug);
+		resetPlayer(game.getSalesforce(), status.salesforce);
+		resetPlayer(game.getHeroku(), status.heroku);
+		resetPlayer(game.getBug(), status.bug);
+		updateButtons();
+	}
+	function updatePlayerStatus(ps) {
+		var player = game.getPlayer(ps.player);
+		if (player) {
+			player.entry(ps.sessionId);
+		}
+		updateButtons();
+	}
+	function entry(name) {
+		con.request({
+			"command": "entry",
+			"data": {
+				"player": name,
+				"sessionId": sessionId
+			}
+		});
+	}
+	function updateButtons() {
+		function updateEntryButton($btn, player) {
+console.log("updateEntryButton", $btn, player.isEntried());
+			$btn.prop("disabled", player.isEntried());
+			if (player.getSessionId() === sessionId) {
+				$btn.text(MSG.yourEntry);
+			} else if (player.isEntried()) {
+				$btn.text(MSG.entried);
+			} else {
+				$btn.text(MSG.entry);
+			}
+		}
+		var s = game.getSalesforce(),
+			h = game.getHeroku(),
+			entried = s.getSessionId() === sessionId || h.getSessionId() === sessionId;
+		$gameGen.prop("disabled", !entried);
+		$("#game-setting-table").find(":input").prop("disabled", !entried);
+		$gameStart.prop("disabled", !entried);
+		updateEntryButton($salesforceEntry, s);
+		updateEntryButton($herokuEntry, h);
+		resetEditors();
 	}
 	function codingStart() {
 		salesforceCtrl.codingStart();
@@ -140,17 +190,20 @@ pg.Application = function(gameId, sessionId) {
 		});
 	}
 	var con = new room.Connection(location.protocol.replace("http", "ws") + location.host + "/ws/" + gameId),
-		game = new Game($("#game")),
-		salesforceCtrl = new SalesforceCtrl(game),
-		herokuCtrl = new HerokuCtrl(game),
+		game = new Game($("#game"), sessionId),
+		salesforceCtrl = new SalesforceCtrl(game, con),
+		herokuCtrl = new HerokuCtrl(game, con),
 		stopWatch = new StopWatch($("#stopwatch")),
+		$gameGen = $("#game-gen"),
+		$salesforceEntry = $("#salesforce-entry"),
+		$herokuEntry = $("#heroku-entry"),
 		$gameStart = $("#game-start");
 
 	init();
 };
 
 
-function Game($el) {
+function Game($el, sessionId) {
 	function reset(width, height) {
 		self.width = width;
 		self.height = height;
@@ -158,10 +211,10 @@ function Game($el) {
 		fields = [];
 		$el.width(width * FIELD_SIZE);
 		$el.height(height * FIELD_SIZE);
-		for (var x=0; x<width; x++) {
+		for (var y=0; y<height; y++) {
 			var line = [];
 			fields.push(line);
-			for (var y=0; y<height; y++) {
+			for (var x=0; x<width; x++) {
 				var $field = $("<div class='field'/>");
 				$el.append($field);
 				line.push(new Field($field, x, y));
@@ -170,7 +223,6 @@ function Game($el) {
 		$.each(getPlayers(), function(idx, player) {
 			player.reset(-1, -1);
 		});
-		$el.show();
 	}
 	function field(x, y) {
 		return fields[y][x];
@@ -184,6 +236,9 @@ function Game($el) {
 			}
 		}
 		return ret;
+	}
+	function getSessionId() {
+		return sessionId;
 	}
 	function hasPlayer(x, y) {
 		var players = getPlayers();
@@ -215,6 +270,14 @@ function Game($el) {
 	}
 	function getBug() {
 		return bug;
+	}
+	function getPlayer(name) {
+		switch (name) {
+			case "salesforce": return salesforce;
+			case "heroku": return heroku;
+			case "bug": return bug;
+		}
+		throw "Invaid name: " + name;
 	}
 	function runCommand(player, command) {
 		var pos = player.pos(),
@@ -257,7 +320,9 @@ function Game($el) {
 			var obj = field(pos.x, pos.y).object();
 			if (obj) {
 				if (obj.canEnter()) {
-					obj.visible(false);
+					if (!player.isBug()) {
+						obj.visible(false);
+					}
 				} else {
 					wait = true;
 				}
@@ -298,21 +363,40 @@ function Game($el) {
 		});
 		run();
 	}
+	function bugTest(cnt) {
+		function run() {
+			setTimeout(function() {
+console.log("bugTest", cnt);
+				if (cnt > 0) {
+					runCommand(bug, bug.nextCommand());
+					run();
+				} else {
+					bug.reset();
+				}
+				cnt--;
+			}, 200);
+		}
+		run();
+	}
 	var self = this,
 		fields = [],
 		salesforce = createPlayer("/assets/images/salesforce.png"),
 		heroku = createPlayer("/assets/images/heroku.png"),
-		bug = createPlayer("/assets/images/bug.png");
+		bug = new Bug(this);
+	$el.append(bug.element());
 	$.extend(this, {
 		"field": field,
 		"allFields": allFields,
 		"reset": reset,
 		"getPlayers": getPlayers,
 		"hasPlayer": hasPlayer,
+		"getPlayer": getPlayer,
 		"getSalesforce": getSalesforce,
 		"getHeroku": getHeroku,
 		"getBug": getBug,
-		"test": test
+		"getSessionId": getSessionId,
+		"test": test,
+		"bugTest": bugTest
 	});
 }
 
@@ -420,6 +504,9 @@ function Player(imageSrc, initialX, initialY) {
 	function isHeroku() {
 		return imageSrc.indexOf("heroku") !== -1;
 	}
+	function isBug() {
+		return false;
+	}
 	function element() {
 		return $div;
 	}
@@ -487,6 +574,9 @@ function Player(imageSrc, initialX, initialY) {
 	function entry(v) {
 		sessionId = v;
 	}
+	function isEntried() {
+		return !!sessionId;
+	}
 	function getSessionId() {
 		return sessionId;
 	}
@@ -509,6 +599,7 @@ function Player(imageSrc, initialX, initialY) {
 		"element": element,
 		"isSalesforce": isSalesforce,
 		"isHeroku": isHeroku,
+		"isBug": isBug,
 		"nextCommand": nextCommand,
 		"commandCount": commandCount,
 		"reset": reset,
@@ -520,11 +611,77 @@ function Player(imageSrc, initialX, initialY) {
 		"down": down,
 		"getSessionId": getSessionId,
 		"entry": entry,
+		"isEntried": isEntried,
 		"toJson": toJson
 	});
 	init();
 }
-function SalesforceCtrl(game) {
+function Bug(game) {
+	function canMove(x, y) {
+		if (x < 0 || y < 0 || x >= game.width || y >= game.height) {
+			return false;
+		}
+		var obj = game.field(x, y).object();
+		return !obj || obj.canEnter();
+	}
+	function calcNextCommand(cnt) {
+		var pos = self.__proto__.pos();
+		switch(prevAction) {
+			case "up":
+				pos.y -= 1;
+				break;
+			case "right":
+				pos.x += 1;
+				break;
+			case "down":
+				pos.y += 1;
+				break;
+			case "left":
+				pos.x -= 1;
+				break;
+		}
+		if (cnt === 3 || canMove(pos.x, pos.y)) {
+			return {
+				"command": prevAction
+			};
+		}
+		switch(prevAction) {
+			case "up":
+				prevAction = cnt === 0 ? "right" : cnt === 1 ? "down" : "left";
+				break;
+			case "right":
+				prevAction = cnt === 0 ? "down" : cnt === 1 ? "left" : "up";
+				break;
+			case "down":
+				prevAction = cnt === 0 ? "left" : cnt === 1 ? "up" : "right";
+				break;
+			case "left":
+				prevAction = cnt === 0 ? "up" : cnt === 1 ? "right" : "down";
+				break;
+		}
+		return calcNextCommand(cnt + 1);
+	}
+	function nextCommand() {
+		return calcNextCommand(0);
+	}
+	function reset(nx, ny) {
+		prevAction = "up";
+		self.__proto__.reset(nx, ny);
+	}
+	function isBug() {
+		return true;
+	}
+	var self = this,
+		prevAction = "up";
+
+	this.__proto__ = new Player("/assets/images/bug.png", -1, -1);
+	$.extend(this, {
+		"nextCommand": nextCommand,
+		"reset": reset,
+		"isBug": isBug
+	});
+}
+function SalesforceCtrl(game, con) {
 	function init() {
 		$ins.click(function() {
 			$ins.toggleClass("btn-success");
@@ -563,12 +720,14 @@ function SalesforceCtrl(game) {
 		$("#salesforce-buttons").find("button").prop("disabled", !b);
 	}
 	function codingStart() {
-		enableButtons(true);
+		var b = game.getSessionId() === game.getSalesforce().getSessionId();
+		enableButtons(b);
+		editor.setChangeHandling(b);
 	}
 	function getEditor() {
 		return editor;
 	}
-	var editor = new TextEditor($("#salesforce-editor")),
+	var editor = new TextEditor("salesforce", $("#salesforce-editor"), con),
 		$ins = $("#salesforce-ins");
 	init();
 	$.extend(this, {
@@ -576,7 +735,7 @@ function SalesforceCtrl(game) {
 		"codingStart": codingStart
 	});
 }
-function HerokuCtrl(game) {
+function HerokuCtrl(game, con) {
 	function init() {
 		$("#heroku-test").click(function() {
 			var player = game.getHeroku();
@@ -587,22 +746,18 @@ function HerokuCtrl(game) {
 		return editor;
 	}
 	function codingStart() {
-		editor.readOnly(false);
+		var b = game.getSessionId() === game.getHeroku().getSessionId();
+		editor.readOnly(!b);
+		editor.setChangeHandling(b);
 	}
-	var editor = new TextEditor($("#heroku-editor"));
+	var editor = new TextEditor("heroku", $("#heroku-editor"), con);
 	init();
 	$.extend(this, {
 		"getEditor": getEditor,
 		"codingStart": codingStart
 	});
 }
-function TextEditor($textarea) {
-	var editor = CodeMirror.fromTextArea($textarea[0], {
-		"mode": "javascript",
-		"lineNumbers": true,
-		"readOnly": true,
-		"styleActiveLine": true
-	});
+function TextEditor(name, $textarea, con) {
 	function setReadOnly(line) {
 		editor.markText({
 			"line": line,
@@ -689,9 +844,56 @@ function TextEditor($textarea) {
 	function undo() {
 		editor.undo();
 	}
+	function onChange(instance, change) {
+		console.log("onChange", change);
+		var data = {
+			"name": name,
+			"from": {
+				"line": change.from.line,
+				"ch": change.from.ch
+			},
+			"to": {
+				"line": change.to.line,
+				"ch": change.to.ch
+			},
+			"text": change.text
+		};
+		con.request({
+			"command": "change",
+			"data": data
+		});
+	}
+	function setChangeHandling(b) {
+		if (b) {
+			editor.on("change", onChange);
+		} else {
+			editor.off("change", onChange);
+		}
+	}
+	function applyChange(change) {
+		editor.replaceRange(change.text.join("\n"), {
+			"line": change.from.line,
+			"ch": change.from.ch
+		}, {
+			"line": change.to.line,
+			"ch": change.to.ch
+		});
+		editor.setSelection({
+			"line": change.to.line,
+			"ch": change.to.ch
+		});
+	}
+	var editor = CodeMirror.fromTextArea($textarea[0], {
+		"mode": "javascript",
+		"lineNumbers": true,
+		"readOnly": true,
+		"styleActiveLine": true
+	});
 	$.extend(this, {
 		"reset": reset,
 		"setCommand": setCommand,
+		"setChangeHandling": setChangeHandling,
+		"applyChange": applyChange,
 		"del": del,
 		"undo": undo,
 		"getCommands": getCommands,

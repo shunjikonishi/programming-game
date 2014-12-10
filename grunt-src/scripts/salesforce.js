@@ -1,4 +1,4 @@
-function SalesforceCtrl(game) {
+function SalesforceCtrl(game, con) {
 	function init() {
 		$ins.click(function() {
 			$ins.toggleClass("btn-success");
@@ -37,12 +37,14 @@ function SalesforceCtrl(game) {
 		$("#salesforce-buttons").find("button").prop("disabled", !b);
 	}
 	function codingStart() {
-		enableButtons(true);
+		var b = game.getSessionId() === game.getSalesforce().getSessionId();
+		enableButtons(b);
+		editor.setChangeHandling(b);
 	}
 	function getEditor() {
 		return editor;
 	}
-	var editor = new TextEditor($("#salesforce-editor")),
+	var editor = new TextEditor("salesforce", $("#salesforce-editor"), con),
 		$ins = $("#salesforce-ins");
 	init();
 	$.extend(this, {

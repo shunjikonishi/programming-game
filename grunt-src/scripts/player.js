@@ -12,6 +12,9 @@ function Player(imageSrc, initialX, initialY) {
 	function isHeroku() {
 		return imageSrc.indexOf("heroku") !== -1;
 	}
+	function isBug() {
+		return false;
+	}
 	function element() {
 		return $div;
 	}
@@ -79,6 +82,9 @@ function Player(imageSrc, initialX, initialY) {
 	function entry(v) {
 		sessionId = v;
 	}
+	function isEntried() {
+		return !!sessionId;
+	}
 	function getSessionId() {
 		return sessionId;
 	}
@@ -101,6 +107,7 @@ function Player(imageSrc, initialX, initialY) {
 		"element": element,
 		"isSalesforce": isSalesforce,
 		"isHeroku": isHeroku,
+		"isBug": isBug,
 		"nextCommand": nextCommand,
 		"commandCount": commandCount,
 		"reset": reset,
@@ -112,6 +119,7 @@ function Player(imageSrc, initialX, initialY) {
 		"down": down,
 		"getSessionId": getSessionId,
 		"entry": entry,
+		"isEntried": isEntried,
 		"toJson": toJson
 	});
 	init();

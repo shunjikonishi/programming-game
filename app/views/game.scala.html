@@ -11,7 +11,7 @@
 <div id="game-setting">
 	<div>
 		<span class="game-setting-title">@Messages("gameSetting")</span>
-		<button id="game-gen" class="btn btn-sm">@Messages("reset")</button>
+		<button id="game-gen" class="btn btn-sm" disabled>@Messages("reset")</button>
 		<button id="toggle-setting" class="btn btn-sm">
 			<span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
 		</button>
@@ -19,35 +19,35 @@
 	<div id="game-setting-table" style="display:none;">
 		<table>
 			<tr>
-				<th>@Messages("fieldWidth")</th><td><input type="number" id="fieldWidth" value="8"/></td>
+				<th>@Messages("fieldWidth")</th><td><input type="number" id="fieldWidth" value="8" disabled/></td>
 			</tr>
 			<tr>
-				<th>@Messages("fieldHeight")</th><td><input type="number" id="fieldHeight" value="8"/></td>
+				<th>@Messages("fieldHeight")</th><td><input type="number" id="fieldHeight" value="8" disabled/></td>
 			</tr>
 			<tr>
-				<th>@Messages("pointCount")</th><td><input type="number" id="pointCount" value="10"/></td>
+				<th>@Messages("pointCount")</th><td><input type="number" id="pointCount" value="10" disabled/></td>
 			</tr>
 			<tr>
-				<th>@Messages("wallCount")</th><td><input type="number" id="wallCount" value="10"/></td>
+				<th>@Messages("wallCount")</th><td><input type="number" id="wallCount" value="10" disabled/></td>
 			</tr>
 			<tr>
-				<th>@Messages("codingTime")</th><td><input type="number" id="codingTime" value="180"/></td>
+				<th>@Messages("codingTime")</th><td><input type="number" id="codingTime" value="60" disabled/></td>
 			</tr>
 			<tr>
-				<th>@Messages("gameTime")</th><td><input type="number" id="gameTime" value="60"/></td>
+				<th>@Messages("gameTime")</th><td><input type="number" id="gameTime" value="60" disabled/></td>
 			</tr>
 		</table>
 	</div>
 </div>
 <div class="workspace">
 	<div class="field-header">
-		<button id="game-start" class="btn btn-info">@Messages("start")</button>
+		<button id="game-start" class="btn btn-info" disabled>@Messages("start")</button>
 		<div id="stopwatch" style="display:none;"></div>
 	</div>
 	<div class="salesforce-side pull-left">
 		<div>
 			<img src="/assets/images/salesforce.png" class="side-icon"/>
-			<button id="salesforce-entry" class="btn salesforce">@Messages("entry")</button>
+			<button id="salesforce-entry" class="btn salesforce" disabled>@Messages("entry")</button>
 		</div>
 		<div>
 			<button id="salesforce-test" class="btn btn-success btn-test">@Messages("test")</button>
@@ -82,14 +82,15 @@
 	<div class="heroku-side pull-right">
 		<div>
 			<img src="/assets/images/heroku.png" class="side-icon"/>
-			<button id="heroku-entry" class="btn heroku">@Messages("entry")</button>
+			<button id="heroku-entry" class="btn heroku" disabled>@Messages("entry")</button>
 		</div>
 		<div>
 			<button id="heroku-test" class="btn btn-success btn-test">@Messages("test")</button>
 		</div>
 		<textarea id="heroku-editor" rows="20"></textarea>
 	</div>
-	<div id="game" class="game" style="display:none;"></div>
+	<div id="game" class="game"></div>
+	<button id="bug-test" class="btn btn-success">@Messages("bugTest")</button>
 </div>
 <script src="/assets/javascripts/app.js"></script>
 <script>
