@@ -145,3 +145,23 @@
 	font-size: 24px;
 	text-align: center;
 }
+
+.illust-holder {
+	width: 100%;
+}
+
+.illust {
+	padding: 0;
+	display: block;
+	margin: 10px auto;
+	width: 512px;
+}
+.illust li{
+	list-style:none;
+	margin: 10px;
+}
+.illust img {
+	width: 512px;
+	height: 384px;
+	border: 1px solid;
+}
