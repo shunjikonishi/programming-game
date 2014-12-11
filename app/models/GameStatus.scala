@@ -18,6 +18,12 @@ case class GameStatus(
   def retire(player: String, sessionId: String) = {
     copy(players = players + (player -> players(player).retire(sessionId)))
   }
+  def reset = {
+    copy(players = players ++ Map(
+      "salesforce" -> salesforce.reset,
+      "heroku" -> heroku.reset
+    ))
+  }
   def toJson = JsObject(Seq(
     "setting" -> setting.toJson,
     "salesforce" -> salesforce.toJson,

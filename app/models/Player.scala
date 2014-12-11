@@ -9,6 +9,7 @@ case class Player(x: Int, y: Int, sessionId: Option[String]) {
   def retire(id: String): Player = sessionId.filter(_ == id)
     .map(_ => copy(sessionId=None))
     .getOrElse(this)
+  def reset = copy(sessionId=None)
 
   def toJson = JsObject(Seq(
     "x" -> JsNumber(x),

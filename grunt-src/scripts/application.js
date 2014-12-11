@@ -58,8 +58,8 @@ pg.Application = function(gameId, sessionId) {
 	function initGame() {
 		var setting = new GameSetting();
 		game.reset(setting.fieldWidth(), setting.fieldHeight());
-		generateObject(setting.wallCount(), Wall);
-		generateObject(setting.wallCount(), Point);
+		generateObject(setting.wallCount(), false);
+		generateObject(setting.wallCount(), true);
 		$.each(game.getPlayers(), function(idx, p) {
 			var pos = randomPos(true);
 			p.reset(pos.x, pos.y);
@@ -76,11 +76,18 @@ pg.Application = function(gameId, sessionId) {
 		};
 		$.each(game.allFields(), function(idx, f) {
 			if (f.hasObject()) {
-				json.status.fields.push({
+				var obj = {
 					"name": f.object().name(),
 					"x": f.x,
 					"y": f.y
-				});
+				};
+				if (obj.name === "point") {
+					obj.point = f.object().point();
+					if (f.object().pointVisible()) {
+						obj.pointVisible = true;
+					}
+				}
+				json.status.fields.push(obj);
 			}
 		});
 		con.request({
@@ -100,7 +107,7 @@ pg.Application = function(gameId, sessionId) {
 			if (f.name === "wall") {
 				game.field(f.x, f.y).object(new Wall());
 			} else if (f.name === "point") {
-				game.field(f.x, f.y).object(new Point());
+				game.field(f.x, f.y).object(new Point(f.point, f.pointVisible || false));
 			}
 		});
 		resetPlayer(game.getSalesforce(), status.salesforce);
@@ -174,6 +181,9 @@ pg.Application = function(gameId, sessionId) {
 	function observe(name, player, editor) {
 		function doObserve() {
 			if (!game.isRunning()) {
+				con.request({
+					"command": "gameEnd"
+				});
 				return;
 			}
 			if (player.commandCount() === 0) {
@@ -192,7 +202,7 @@ pg.Application = function(gameId, sessionId) {
 					"action": cmd
 				}
 			});
-			setTimeout(doObserve, 500);
+			setTimeout(doObserve, 700);
 		}
 		var context = {
 			"p": player,
@@ -201,7 +211,7 @@ pg.Application = function(gameId, sessionId) {
 				player.wait();
 			}
 		}, interpreter = new Interpreter(context, new Parser());
-		doObserve();
+		setTimeout(doObserve, 3000);
 	}
 	function random(n) {
 		return Math.floor(Math.random() * n);
@@ -219,10 +229,18 @@ pg.Application = function(gameId, sessionId) {
 			}
 		}
 	}
-	function generateObject(cnt, Func) {
+	function generateObject(cnt, isPoint) {
+		var visible = cnt / 5;
 		for (var i=0; i<cnt; i++) {
-			var pos = randomPos(false);
-			game.field(pos.x, pos.y).object(new Func());
+			var pos = randomPos(false),
+				obj = null;
+			if (isPoint) {
+				var point = (random(3) + 1) * 10;
+				obj = new Point(point, i >= visible);
+			} else {
+				obj = new Wall();
+			}
+			game.field(pos.x, pos.y).object(obj);
 		}
 	}
 	function resetEditors() {

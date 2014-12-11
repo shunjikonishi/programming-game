@@ -45,8 +45,8 @@ function Game($el, sessionId) {
 		}
 		return false;
 	}
-	function createPlayer(imageSrc) {
-		var ret = new Player(imageSrc, -1, -1);
+	function createPlayer(imageSrc, pointDiv) {
+		var ret = new Player(imageSrc, -1, -1, $(pointDiv));
 		$el.append(ret.element());
 		return ret;
 	}
@@ -113,11 +113,7 @@ function Game($el, sessionId) {
 		if (!wait) {
 			var obj = field(pos.x, pos.y).object();
 			if (obj) {
-				if (obj.canEnter()) {
-					if (!player.isBug()) {
-						obj.visible(false);
-					}
-				} else {
+				if (!obj.canEnter()) {
 					wait = true;
 				}
 			} 
@@ -139,25 +135,55 @@ function Game($el, sessionId) {
 				};
 			}
 			if (same(p1_2, p2_2)) {
-				return {
-					"x": p1_2.x,
-					"y": p1_2.y
-				};
+				if (same(p1_1, p1_2)) {
+					return {
+						"x": (p1_2.x + p2_1.x) / 2,
+						"y": (p1_2.y + p2_1.y) / 2
+					};
+				} else if (same(p2_1, p2_2)) {
+					return {
+						"x": (p1_1.x + p2_2.x) / 2,
+						"y": (p1_1.y + p2_2.y) / 2
+					};
+				} else {
+					return {
+						"x": p1_2.x,
+						"y": p1_2.y
+					};
+				}
 			}
 			return null;
 		}
 		function gameover(winner) {
 			running = false;
-			if (winner) {
-				showMessage({
-					"message": MSG.format(MSG.win, winner),
-					"duration": "4s"
-				}, winner.toLowerCase());
-			} else {
-				showMessage({
-					"message": MSG.draw,
-					"duration": "4s"
-				});
+			showMessage({
+				"message": MSG.format(MSG.win, winner),
+				"duration": "4s"
+			}, winner.toLowerCase());
+		}
+		function draw() {
+			running = false;
+			showMessage({
+				"message": MSG.draw,
+				"duration": "4s"
+			});
+		}
+		function showConflict(pos) {
+			var $conflict = $("#conflict").show();
+			$conflict.css({
+				"left": pos.x * 50,
+				"top": pos.y * 50
+			});
+			setTimeout(function() {
+				$conflict.hide();
+			}, 100);
+		}
+		function checkPoint(player) {
+			var pos = player.pos(),
+				obj = field(pos.x, pos.y).object();
+			if (obj && obj.visible() && obj.name() === "point") {
+				player.addPoint(obj.point());
+				obj.visible(false);
 			}
 		}
 		if (!running) {
@@ -185,9 +211,11 @@ function Game($el, sessionId) {
 			hOut = true;
 		}
 		if (!sOut && !hOut) {
-			if (conflict(spos1, spos2, hpos1, hpos2)) {
+			var cpos = conflict(spos1, spos2, hpos1, hpos2);
+			if (cpos) {
 				salesforce.pos(spos1.x, spos1.y);
 				heroku.pos(hpos1.x, hpos1.y);
+				showConflict(cpos);
 				if (same(spos1, bpos2)) {
 					sOut = true;
 				}
@@ -196,16 +224,28 @@ function Game($el, sessionId) {
 				}
 			}
 		}
+		if (!sOut) {
+			checkPoint(salesforce);
+		}
+		if (!hOut) {
+			checkPoint(heroku);
+		}
 		currentTurn++;
 		showTurnLabel();
 		if (sOut && hOut) {
-			gameover();
+			draw();
 		} else if (sOut) {
 			gameover("Heroku");
 		} else if (hOut) {
 			gameover("Salesforce");
 		} else if (currentTurn >= turnCount) {
-			gameover();
+			if (salesforce.getPoint() > heroku.getPoint()) {
+				gameover("Salesforce");
+			} else if (salesforce.getPoint() < heroku.getPoint()) {
+				gameover("Heroku");
+			} else {
+				draw();
+			}
 		}
 	}
 	function test(player, commands) {
@@ -282,8 +322,8 @@ function Game($el, sessionId) {
 	}
 	var self = this,
 		fields = [],
-		salesforce = createPlayer("/assets/images/salesforce.png"),
-		heroku = createPlayer("/assets/images/heroku.png"),
+		salesforce = createPlayer("/assets/images/salesforce.png", "#salesforce-point"),
+		heroku = createPlayer("/assets/images/heroku.png", "#heroku-point"),
 		bug = new Bug(this),
 		animate = new Animate($("#message-dialog")),
 		running = false,

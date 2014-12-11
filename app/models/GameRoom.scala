@@ -37,6 +37,10 @@ class GameRoom(name: String) extends DefaultRoom(name) {
     Await.result(ret, Duration.Inf)
   }
 
+  def gameEnd = {
+    actor ! GameEnd
+  }
+
   private def doSendAction(player: String, action: JsValue) = {
     def canSend(act: ActionPair): Boolean = status_.map { status =>
       (act.salesforce.isDefined && act.heroku.isDefined) ||
@@ -83,6 +87,8 @@ class GameRoom(name: String) extends DefaultRoom(name) {
         sender ! doEntry(player, sessionId)
       case SendAction(player, action) => 
         doSendAction(player, action)
+      case GameEnd =>
+        status_ = status_.map(_.reset)
       case x => 
         super.receive(x)
     }
@@ -94,5 +100,6 @@ class GameRoom(name: String) extends DefaultRoom(name) {
   private case class UpdateGameStatus(status: GameStatus)
   private case class Entry(player: String, sessionId: String)
   private case class SendAction(player: String, action: JsValue)
+  private case class GameEnd()
 }
 

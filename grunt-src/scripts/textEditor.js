@@ -27,7 +27,7 @@ function TextEditor(name, $textarea, con) {
 	}
 	function consumeLine() {
 		var line = consumedLine + 1,
-			lineCount = editor.lineCount() - 1;
+			lineCount = editor.lineCount();
 		while (line < lineCount) {
 			var text = editor.getLine(line);
 			setReadOnly(line);

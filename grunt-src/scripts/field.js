@@ -6,7 +6,10 @@ function Field($el, x, y) {
 			return obj;
 		} else {
 			obj = v;
-			$el.empty().append(obj.image);
+			$el.empty().append(obj.image());
+			if (obj.hasAddition()) {
+				$el.append(obj.addition());
+			}
 		}
 	}
 	$.extend(this, {
@@ -17,7 +20,7 @@ function Field($el, x, y) {
 	});
 }
 
-function FieldObject(name, imageSrc, enterable) {
+function FieldObject(name, imageSrc, enterable, $addition) {
 	var $img = $("<img/>");
 	$img.attr("src", imageSrc);
 	$img.addClass("object");
@@ -26,18 +29,32 @@ function FieldObject(name, imageSrc, enterable) {
 	function canEnter() { return enterable;}
 	function visible(v) {
 		if (v === undefined) {
-			return !!$img.hasClass("hide");
+			return !$img.hasClass("hide");
 		} else if (v) {
 			$img.removeClass("hide");
+			if ($addition) {
+				$addition.removeClass("hide");
+			}
 		} else {
 			$img.addClass("hide");
+			if ($addition) {
+				$addition.addClass("hide");
+			}
 		}
+	}
+	function hasAddition() {
+		return !!$addition;
+	}
+	function addition() {
+		return $addition;
 	}
 	$.extend(this, {
 		"name": function() { return name;},
 		"image": image,
 		"canEnter": canEnter,
-		"visible": visible
+		"visible": visible,
+		"hasAddition": hasAddition,
+		"addition": addition
 	});
 }
 
@@ -45,6 +62,13 @@ function Wall() {
 	this.__proto__ = new FieldObject("wall", "/assets/images/wall.png", false);
 }
 
-function Point() {
-	this.__proto__ = new FieldObject("point", "/assets/images/gold.png", true);
+function Point(point, pointVisible) {
+	var $addition = $("<div/>");
+	$addition.addClass("point");
+	$addition.text(pointVisible ? point : "?");
+	this.__proto__ = new FieldObject("point", "/assets/images/gold.png", true, $addition);
+	$.extend(this, {
+		"point": function() { return point;},
+		"pointVisible": function() { return pointVisible;}
+	});
 }

@@ -52,6 +52,7 @@
 		</div>
 		<div>
 			<button id="salesforce-test" class="btn btn-success btn-test">@Messages("test")</button>
+			<span class="point-holder"><span id="salesforce-point">0</span>Point</span>
 		</div>
 		<textarea id="salesforce-editor" rows="20"></textarea>
 		<div>
@@ -87,10 +88,13 @@
 		</div>
 		<div>
 			<button id="heroku-test" class="btn btn-success btn-test">@Messages("test")</button>
+			<span class="point-holder"><span id="heroku-point">0</span>Point</span>
 		</div>
 		<textarea id="heroku-editor" rows="20"></textarea>
 	</div>
-	<div id="game" class="game"></div>
+	<div id="game" class="game">
+		<img src="/assets/images/conflict.png" id="conflict" style="display:none;"/>
+	</div>
 	<button id="bug-test" class="btn btn-success btn-test">@Messages("bugTest")</button>
 </div>
 <div id="message-dialog" class="animateDialog-default" style="display:none;">

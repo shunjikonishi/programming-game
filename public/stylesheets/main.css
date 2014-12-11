@@ -37,7 +37,6 @@
 }
 
 .field .object {
-	position absolute;
 	left: 1px;
 	top: 1px;
 	padding: 0;
@@ -45,6 +44,14 @@
 	border: 0;
 	width: 100%;
 	height: 100%;
+}
+
+.field .point {
+	right: 0px;
+	bottom: 0px;
+	margin-top: -50px;
+	margin-left: 2px;
+	font-weight: bold;
 }
 
 .btn.heroku {
@@ -70,6 +77,15 @@
 	height: 48px;
 }
 
+#conflict {
+	position: absolute;
+	height: 50px;
+	width: 50px;
+	padding:1px;
+	box-sizing: border-box;
+	z-index: 10;
+}
+
 .workspace {
 	position: relative;
 	width: 100%;
@@ -88,6 +104,16 @@
 .salesforce-side, .heroku-side {
 	width: 220px;
 	margin: 10px;
+}
+
+#salesforce-point, #heroku-point {
+	font-size: 16pt;
+	font-weight: bold;
+	margin-right: 2px;
+}
+
+.point-holder {
+	float: right;
 }
 
 #salesforce-editor, #heroku-editor {

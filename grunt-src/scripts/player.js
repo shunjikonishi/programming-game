@@ -1,4 +1,4 @@
-function Player(imageSrc, initialX, initialY) {
+function Player(imageSrc, initialX, initialY, $point) {
 	function init() {
 		var $img = $("<img/>");
 		$img.attr("src", imageSrc);
@@ -19,6 +19,7 @@ function Player(imageSrc, initialX, initialY) {
 		return $div;
 	}
 	function reset(nx, ny) {
+		point = 0;
 		commands = [];
 		if (nx !== undefined) {
 			initialX = nx;
@@ -98,10 +99,20 @@ function Player(imageSrc, initialX, initialY) {
 		}
 		return ret;
 	}
+	function getPoint() { 
+		return point;
+	}
+	function addPoint(n) {
+		point += n;
+		if ($point) {
+			$point.text(point);
+		}
+	}
 	var x, y,
 		$div = $("<div/>"),
 		sessionId = null,
-		commands = [];
+		commands = [],
+		point = 0;
 
 	$.extend(this, {
 		"element": element,
@@ -120,7 +131,9 @@ function Player(imageSrc, initialX, initialY) {
 		"getSessionId": getSessionId,
 		"entry": entry,
 		"isEntried": isEntried,
-		"toJson": toJson
+		"toJson": toJson,
+		"getPoint": getPoint,
+		"addPoint": addPoint
 	});
 	init();
 }
