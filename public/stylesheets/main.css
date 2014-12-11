@@ -172,6 +172,13 @@
 	text-align: center;
 }
 
+.main-title {
+	text-align: center;
+}
+.index-desc {
+	width: 512px;
+	margin: 10px auto;
+}
 .illust-holder {
 	width: 100%;
 }

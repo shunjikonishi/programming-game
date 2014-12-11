@@ -1,16 +1,26 @@
 @(host: String, id: String)
 
 @main {
-<h1>@Messages("title")</h1>
-<div>
-<p>@Messages("pathInputMessage")</p>
-http://@host/game/ <input id="gameId" size="40"/>
-<button class="btn primary" id="btnGo">@Messages("go")</button>
+<h1 class="main-title">@Messages("title")</h1>
+<div class="index-desc">
+	<p>@Messages("pathInputMessage")</p>
+	http://@host/game/ <input id="gameId" size="20"/>
+	<button class="btn btn-primary" id="btnGo">@Messages("go")</button>
 </div>
+<hr>
 <div class="illust-holder">
 	<ul class="illust">
-		<li><img src="/assets/images/illust/01.png"/></li>
-		<li><img src="/assets/images/illust/02.png"/></li>
+		<li>
+			<p>SalesforceとHerokuで戦う対戦型の二人用ゲームです。</p>
+			<img src="/assets/images/illust/02.png"/>
+		</li>
+		<li>
+			<p>バグを避けながらポイントをGETします。</p>
+			<img src="/assets/images/illust/01.png"/>
+		</li>
+		<li>
+			<h2>遊び方</h2>
+		</li>
 		<li><img src="/assets/images/illust/03.png"/></li>
 		<li><img src="/assets/images/illust/04.png"/></li>
 		<li><img src="/assets/images/illust/05.png"/></li>
