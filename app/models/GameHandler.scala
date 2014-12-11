@@ -33,6 +33,16 @@ class GameHandler(room: GameRoom, sessionId: String) extends RoomHandler(room) w
       broadcast(command.json(command.data))
       CommandResponse.None
     }
+    addHandler("codingStart") { command =>
+      broadcast(command.json(command.data))
+      CommandResponse.None
+    }
+    addHandler("playerAction") { command =>
+      val player = (command.data \ "player").as[String]
+      val action = command.data \ "action"
+      room.sendAction(player, action)
+      CommandResponse.None
+    }
     addBroadcastFilter(this)
   }
 

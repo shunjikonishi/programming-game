@@ -20,3 +20,7 @@ ui.tooManyPlayers=プレイヤーは二人までです。
 ui.entry=エントリーする！
 ui.yourEntry=エントリー中！！
 ui.entried=エントリー済み
+ui.codingStart=コーディング開始！
+ui.gameStart=ゲーム開始！
+ui.win={0}の勝利！！！
+ui.draw=引き分け！！！

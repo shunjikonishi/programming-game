@@ -108,8 +108,7 @@ function Game($el, sessionId) {
 				break;
 		}
 		if (end) {
-			gameover(player, pos.x, pos.y);
-			return;
+			return false;
 		}
 		if (!wait) {
 			var obj = field(pos.x, pos.y).object();
@@ -126,23 +125,108 @@ function Game($el, sessionId) {
 		if (!wait) {
 			player.pos(pos.x, pos.y);
 		}
+		return true;
 	}
-	function gameover(player, x, y) {
-		player.reset();
+	function turnAction(data) {
+		function same(p1, p2) {
+			return p1.x === p2.x && p1.y === p2.y;
+		}
+		function conflict(p1_1, p1_2, p2_1, p2_2) {
+			if (same(p1_1, p2_2) && same(p1_2, p2_1)) {
+				return {
+					"x": (p1_2.x + p2_2.x) / 2,
+					"y": (p1_2.y + p2_2.y) / 2
+				};
+			}
+			if (same(p1_2, p2_2)) {
+				return {
+					"x": p1_2.x,
+					"y": p1_2.y
+				};
+			}
+			return null;
+		}
+		function gameover(winner) {
+			running = false;
+			if (winner) {
+				showMessage({
+					"message": MSG.format(MSG.win, winner),
+					"duration": "4s"
+				}, winner.toLowerCase());
+			} else {
+				showMessage({
+					"message": MSG.draw,
+					"duration": "4s"
+				});
+			}
+		}
+		if (!running) {
+			return;
+		}
+		var sOut = false,
+			hOut = false,
+			spos1 = salesforce.pos(),
+			hpos1 = heroku.pos(),
+			bpos1 = bug.pos();
+		if (!runCommand(salesforce, data.salesforce)) {
+			sOut = true;
+		}
+		if (!runCommand(heroku, data.heroku)) {
+			hOut = true;
+		}
+		runCommand(bug, bug.nextCommand());
+		var spos2 = salesforce.pos(),
+			hpos2 = heroku.pos(),
+			bpos2 = bug.pos();
+		if (conflict(spos1, spos2, bpos1, bpos2)) {
+			sOut = true;
+		}
+		if (conflict(hpos1, hpos2, bpos1, bpos2)) {
+			hOut = true;
+		}
+		if (!sOut && !hOut) {
+			if (conflict(spos1, spos2, hpos1, hpos2)) {
+				salesforce.pos(spos1.x, spos1.y);
+				heroku.pos(hpos1.x, hpos1.y);
+				if (same(spos1, bpos2)) {
+					sOut = true;
+				}
+				if (same(hpos1, bpos2)) {
+					hOut = true;
+				}
+			}
+		}
+		currentTurn++;
+		showTurnLabel();
+		if (sOut && hOut) {
+			gameover();
+		} else if (sOut) {
+			gameover("Heroku");
+		} else if (hOut) {
+			gameover("Salesforce");
+		} else if (currentTurn >= turnCount) {
+			gameover();
+		}
 	}
 	function test(player, commands) {
+		function gameover() {
+			player.reset();
+			$.each(allFields(), function(idx, f) {
+				if (f.object()) {
+					f.object().visible(true);
+				}
+			});
+		}
 		function run() {
 			setTimeout(function() {
 				if (player.commandCount() > 0) {
-					runCommand(player, player.nextCommand());
-					run();
+					if (runCommand(player, player.nextCommand())) {
+						run();
+					} else {
+						gameover();
+					}
 				} else {
-					player.reset();
-					$.each(allFields(), function(idx, f) {
-						if (f.object()) {
-							f.object().visible(true);
-						}
-					});
+					gameover();
 				}
 			}, 200);
 		}
@@ -161,7 +245,6 @@ function Game($el, sessionId) {
 	function bugTest(cnt) {
 		function run() {
 			setTimeout(function() {
-console.log("bugTest", cnt);
 				if (cnt > 0) {
 					runCommand(bug, bug.nextCommand());
 					run();
@@ -173,11 +256,39 @@ console.log("bugTest", cnt);
 		}
 		run();
 	}
+	function start(gameTime) {
+		running = true;
+		turnCount = gameTime;
+		currentTurn = 0;
+		showTurnLabel();
+	}
+	function isRunning() {
+		return running;
+	}
+	function showTurnLabel() {
+		$("#turnlabel").text(currentTurn + "/" + turnCount).show();
+	}
+	function showMessage(options, icon) {
+		if (typeof(options) === "string") {
+			options = {
+				"message": options
+			};
+		}
+		animate.element().find("img").hide();
+		if (icon) {
+			animate.element().find("." + icon).show();
+		}
+		animate.show(options);
+	}
 	var self = this,
 		fields = [],
 		salesforce = createPlayer("/assets/images/salesforce.png"),
 		heroku = createPlayer("/assets/images/heroku.png"),
-		bug = new Bug(this);
+		bug = new Bug(this),
+		animate = new Animate($("#message-dialog")),
+		running = false,
+		turnCount = -1,
+		currentTurn = -1;
 	$el.append(bug.element());
 	$.extend(this, {
 		"field": field,
@@ -191,7 +302,11 @@ console.log("bugTest", cnt);
 		"getBug": getBug,
 		"getSessionId": getSessionId,
 		"test": test,
-		"bugTest": bugTest
+		"bugTest": bugTest,
+		"showMessage": showMessage,
+		"start": start,
+		"isRunning": isRunning,
+		"turnAction": turnAction
 	});
 }
 

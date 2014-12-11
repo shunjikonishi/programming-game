@@ -29,9 +29,15 @@ pg.Application = function(gameId, sessionId) {
 			entry("heroku");
 		});
 		$gameStart.click(function() {
+			var setting = new GameSetting();
 			$gameStart.hide();
-			codingStart();
-			stopWatch.start(new GameSetting().codingTime(), executeStart());
+			con.request({
+				"command": "codingStart",
+				"data": {
+					"codingTime": setting.codingTime(),
+					"gameTime": setting.gameTime()
+				}
+			});
 		});
 	}
 	function initConnection(con) {
@@ -47,6 +53,8 @@ pg.Application = function(gameId, sessionId) {
 			ctrl.getEditor().applyChange(data);
 		});
 		con.on("playerStatus", updatePlayerStatus);
+		con.on("codingStart", codingStart);
+		con.on("turnAction", game.turnAction);
 		con.request({
 			"command": "status",
 			"success": function(data) {
@@ -130,7 +138,6 @@ pg.Application = function(gameId, sessionId) {
 	}
 	function updateButtons() {
 		function updateEntryButton($btn, player) {
-console.log("updateEntryButton", $btn, player.isEntried());
 			$btn.prop("disabled", player.isEntried());
 			if (player.getSessionId() === sessionId) {
 				$btn.text(MSG.yourEntry);
@@ -150,12 +157,63 @@ console.log("updateEntryButton", $btn, player.isEntried());
 		updateEntryButton($herokuEntry, h);
 		resetEditors();
 	}
-	function codingStart() {
+	function codingStart(setting) {
+		$(".btn-test").prop("disabled", false);
+		$gameStart.hide();
+		if (stopWatch.isRunning()) {
+			return;
+		}
+		$salesforceEntry.prop("disabled", true);
+		$herokuEntry.prop("disabled", true);
+		game.showMessage(MSG.codingStart);
 		salesforceCtrl.codingStart();
 		herokuCtrl.codingStart();
+		stopWatch.start(setting.codingTime, function() {
+			executeStart(setting.gameTime);
+		});
 	}
-	function executeStart() {
-		
+	function executeStart(gameTime) {
+		$(".btn-test").prop("disabled", true);
+		game.showMessage(MSG.gameStart);
+		game.start(gameTime);
+		if (game.getSalesforce().getSessionId() === sessionId) {
+			observe("salesforce", game.getSalesforce(), salesforceCtrl.getEditor());
+		}
+		if (game.getHeroku().getSessionId() === sessionId) {
+			observe("heroku", game.getHeroku(), herokuCtrl.getEditor());
+		}
+	}
+	function observe(name, player, editor) {
+		function doObserve() {
+			if (!game.isRunning()) {
+				return;
+			}
+			if (player.commandCount() === 0) {
+				var text = editor.consumeLine();
+				if (text) {
+					interpreter.run(text);
+				}
+			}
+			var cmd = player.commandCount() > 0 ? player.nextCommand() : {
+				"command": "wait"
+			};
+			con.request({
+				"command": "playerAction",
+				"data": {
+					"player": name,
+					"action": cmd
+				}
+			});
+			setTimeout(doObserve, 500);
+		}
+		var context = {
+			"p": player,
+			"onError": function(msg) {
+				console.log(msg);
+				player.wait();
+			}
+		}, interpreter = new Interpreter(context, new Parser());
+		doObserve();
 	}
 	function random(n) {
 		return Math.floor(Math.random() * n);
@@ -313,8 +371,7 @@ function Game($el, sessionId) {
 				break;
 		}
 		if (end) {
-			gameover(player, pos.x, pos.y);
-			return;
+			return false;
 		}
 		if (!wait) {
 			var obj = field(pos.x, pos.y).object();
@@ -331,23 +388,108 @@ function Game($el, sessionId) {
 		if (!wait) {
 			player.pos(pos.x, pos.y);
 		}
+		return true;
 	}
-	function gameover(player, x, y) {
-		player.reset();
+	function turnAction(data) {
+		function same(p1, p2) {
+			return p1.x === p2.x && p1.y === p2.y;
+		}
+		function conflict(p1_1, p1_2, p2_1, p2_2) {
+			if (same(p1_1, p2_2) && same(p1_2, p2_1)) {
+				return {
+					"x": (p1_2.x + p2_2.x) / 2,
+					"y": (p1_2.y + p2_2.y) / 2
+				};
+			}
+			if (same(p1_2, p2_2)) {
+				return {
+					"x": p1_2.x,
+					"y": p1_2.y
+				};
+			}
+			return null;
+		}
+		function gameover(winner) {
+			running = false;
+			if (winner) {
+				showMessage({
+					"message": MSG.format(MSG.win, winner),
+					"duration": "4s"
+				}, winner.toLowerCase());
+			} else {
+				showMessage({
+					"message": MSG.draw,
+					"duration": "4s"
+				});
+			}
+		}
+		if (!running) {
+			return;
+		}
+		var sOut = false,
+			hOut = false,
+			spos1 = salesforce.pos(),
+			hpos1 = heroku.pos(),
+			bpos1 = bug.pos();
+		if (!runCommand(salesforce, data.salesforce)) {
+			sOut = true;
+		}
+		if (!runCommand(heroku, data.heroku)) {
+			hOut = true;
+		}
+		runCommand(bug, bug.nextCommand());
+		var spos2 = salesforce.pos(),
+			hpos2 = heroku.pos(),
+			bpos2 = bug.pos();
+		if (conflict(spos1, spos2, bpos1, bpos2)) {
+			sOut = true;
+		}
+		if (conflict(hpos1, hpos2, bpos1, bpos2)) {
+			hOut = true;
+		}
+		if (!sOut && !hOut) {
+			if (conflict(spos1, spos2, hpos1, hpos2)) {
+				salesforce.pos(spos1.x, spos1.y);
+				heroku.pos(hpos1.x, hpos1.y);
+				if (same(spos1, bpos2)) {
+					sOut = true;
+				}
+				if (same(hpos1, bpos2)) {
+					hOut = true;
+				}
+			}
+		}
+		currentTurn++;
+		showTurnLabel();
+		if (sOut && hOut) {
+			gameover();
+		} else if (sOut) {
+			gameover("Heroku");
+		} else if (hOut) {
+			gameover("Salesforce");
+		} else if (currentTurn >= turnCount) {
+			gameover();
+		}
 	}
 	function test(player, commands) {
+		function gameover() {
+			player.reset();
+			$.each(allFields(), function(idx, f) {
+				if (f.object()) {
+					f.object().visible(true);
+				}
+			});
+		}
 		function run() {
 			setTimeout(function() {
 				if (player.commandCount() > 0) {
-					runCommand(player, player.nextCommand());
-					run();
+					if (runCommand(player, player.nextCommand())) {
+						run();
+					} else {
+						gameover();
+					}
 				} else {
-					player.reset();
-					$.each(allFields(), function(idx, f) {
-						if (f.object()) {
-							f.object().visible(true);
-						}
-					});
+					gameover();
 				}
 			}, 200);
 		}
@@ -366,7 +508,6 @@ function Game($el, sessionId) {
 	function bugTest(cnt) {
 		function run() {
 			setTimeout(function() {
-console.log("bugTest", cnt);
 				if (cnt > 0) {
 					runCommand(bug, bug.nextCommand());
 					run();
@@ -378,11 +519,39 @@ console.log("bugTest", cnt);
 		}
 		run();
 	}
+	function start(gameTime) {
+		running = true;
+		turnCount = gameTime;
+		currentTurn = 0;
+		showTurnLabel();
+	}
+	function isRunning() {
+		return running;
+	}
+	function showTurnLabel() {
+		$("#turnlabel").text(currentTurn + "/" + turnCount).show();
+	}
+	function showMessage(options, icon) {
+		if (typeof(options) === "string") {
+			options = {
+				"message": options
+			};
+		}
+		animate.element().find("img").hide();
+		if (icon) {
+			animate.element().find("." + icon).show();
+		}
+		animate.show(options);
+	}
 	var self = this,
 		fields = [],
 		salesforce = createPlayer("/assets/images/salesforce.png"),
 		heroku = createPlayer("/assets/images/heroku.png"),
-		bug = new Bug(this);
+		bug = new Bug(this),
+		animate = new Animate($("#message-dialog")),
+		running = false,
+		turnCount = -1,
+		currentTurn = -1;
 	$el.append(bug.element());
 	$.extend(this, {
 		"field": field,
@@ -396,7 +565,11 @@ console.log("bugTest", cnt);
 		"getBug": getBug,
 		"getSessionId": getSessionId,
 		"test": test,
-		"bugTest": bugTest
+		"bugTest": bugTest,
+		"showMessage": showMessage,
+		"start": start,
+		"isRunning": isRunning,
+		"turnAction": turnAction
 	});
 }
 
@@ -770,6 +943,7 @@ function TextEditor(name, $textarea, con) {
 			"readOnly": true
 		});
 		editor.addLineClass(line, "background", "editor-readonly");
+		consumedLine = line;
 	}
 	function isReadOnly(line) {
 		return line === 0;
@@ -782,6 +956,19 @@ function TextEditor(name, $textarea, con) {
 			"line": 1,
 			"head": 0
 		});
+	}
+	function consumeLine() {
+		var line = consumedLine + 1,
+			lineCount = editor.lineCount() - 1;
+		while (line < lineCount) {
+			var text = editor.getLine(line);
+			setReadOnly(line);
+			if (text) {
+				return text;
+			}
+			line++;
+		}
+		return null;
 	}
 	function setCommand(text, ins) {
 		var line = editor.getCursor().line;
@@ -883,12 +1070,13 @@ function TextEditor(name, $textarea, con) {
 			"ch": change.to.ch
 		});
 	}
-	var editor = CodeMirror.fromTextArea($textarea[0], {
-		"mode": "javascript",
-		"lineNumbers": true,
-		"readOnly": true,
-		"styleActiveLine": true
-	});
+	var consumedLine = 0,
+		editor = CodeMirror.fromTextArea($textarea[0], {
+			"mode": "javascript",
+			"lineNumbers": true,
+			"readOnly": true,
+			"styleActiveLine": true
+		});
 	$.extend(this, {
 		"reset": reset,
 		"setCommand": setCommand,
@@ -897,7 +1085,8 @@ function TextEditor(name, $textarea, con) {
 		"del": del,
 		"undo": undo,
 		"getCommands": getCommands,
-		"readOnly": readOnly
+		"readOnly": readOnly,
+		"consumeLine": consumeLine
 	});
 }
 function Parser() {
@@ -1084,22 +1273,126 @@ function StopWatch($el) {
 		show();
 		if (second > 0) {
 			setTimeout(countDown, 1000);
-		} else if (callback) {
+		} else {
+console.log("stopWatch finish", callback);
+			running = false;
 			$el.hide();
-			callback();
+			if (callback) {
+				callback();
+			}
 		}
 	}
 	function start(sec, func) {
+		running = true;
 		$el.show();
 		second = sec;
 		callback = func;
 		show();
 		setTimeout(countDown, 1000);
 	}
+	function isRunning() { 
+		return running;
+	}
 	var second = 0,
-		callback = null;
+		callback = null,
+		running = false;
 	$.extend(this, {
-		"start": start
+		"start": start,
+		"isRunning": isRunning
+	});
+}
+function Animate($el) {
+	var properties = [
+		"name",
+		"iteration-count",
+		"duration",
+		"timing-function",
+		"delay",
+		"direction"
+	], defaults = {
+		"name" : "inout",
+		"iteration-count" : 1,
+		"duration" : "2s",
+		"timing-function" : "ease",
+		"delay" : "0s",
+		"direction" : "normal"
+	};
+	function durationToMillis(value) {
+		var idx1 = value.indexOf("ms"),
+			idx2 = value.indexOf("s");
+		if (idx1 !== -1) {
+			value = value.substring(0, value.length - 2);
+			return parseInt(value);
+		} else if (idx2 !== -1) {
+			value = value.substring(0, value.length - 1);
+		}
+		return parseInt(value) * 1000;
+
+	}
+	function show(options) {
+		if (typeof(options) === "string") {
+			options = {
+				"message": options
+			};
+		}
+		if (shown) {
+			queue.push(options);
+			return;
+		}
+		shown = true;
+		var params = {},
+			msg = options.message;
+		for (var i=0; i<properties.length; i++) {
+			var name = properties[i],
+				value = null;
+			if (options[name]) {
+				value = options[name];
+			} else if (initials[name]) {
+				value = initials[name];
+			} else {
+				value = defaults[name];
+			}
+			params["animation-" + name] = value;
+			params["-webkit-animation-" + name] = value;
+		}
+		if (msg) {
+			$el.find(".message").text(msg);
+		}
+		$el.css(params);
+		$el.show();
+		setTimeout(function() {
+			$el.hide();
+			$el.css("animation-name", "");
+			$el.css("-webkit-animation-name", "");
+			if (initialText) {
+				$el.find(".message").text(initialText);
+			}
+			shown = false;
+			if (queue.length > 0) {
+				var next = queue.shift();
+				setTimeout(function() {
+					show(next);
+				}, 10);
+			}
+		}, durationToMillis(params["animation-duration"]));
+	}
+	function element() {
+		return $el;
+	}
+	var initials = {},
+		initialText = $el.find(".message").text(),
+		shown = false,
+		queue = [];
+	for (var i=0; i<properties.length; i++) {
+		var name = properties[i],
+			value = $el.css("animation-" + name);
+		if (value && value !== "none" && value !== "0s") {
+			initials[name] = value;
+		}
+	}
+	$.extend(this, {
+		"show" : show,
+		"element": element
 	});
 }
 })(jQuery);

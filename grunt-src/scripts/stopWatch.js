@@ -10,21 +10,31 @@ function StopWatch($el) {
 		show();
 		if (second > 0) {
 			setTimeout(countDown, 1000);
-		} else if (callback) {
+		} else {
+console.log("stopWatch finish", callback);
+			running = false;
 			$el.hide();
-			callback();
+			if (callback) {
+				callback();
+			}
 		}
 	}
 	function start(sec, func) {
+		running = true;
 		$el.show();
 		second = sec;
 		callback = func;
 		show();
 		setTimeout(countDown, 1000);
 	}
+	function isRunning() { 
+		return running;
+	}
 	var second = 0,
-		callback = null;
+		callback = null,
+		running = false;
 	$.extend(this, {
-		"start": start
+		"start": start,
+		"isRunning": isRunning
 	});
 }

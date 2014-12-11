@@ -139,7 +139,7 @@
 	width: 200px;
 }
 
-#stopwatch {
+.header-label {
 	width: 200px;
 	font-weight: bold;
 	font-size: 24px;
@@ -164,4 +164,43 @@
 	width: 512px;
 	height: 384px;
 	border: 1px solid;
+}
+
+img.salesforce, img.heroku {
+	display: inline-block;
+	padding: 20px;
+}
+.animateDialog-default {
+	position: fixed;
+	left: 50%;
+	top: 50%;
+	margin-left: -140px;
+	margin-top: -25px;
+	min-height: 50px; 
+	width: 280px;
+	border: solid 1;
+	border-radius: 4px;
+	color: #FFF;
+	background-color: #00A0DF;
+	z-index: 10;
+}
+
+.animateDialog-default .message {
+  display: block;
+  font-size: 24px;
+  text-align: center;
+  margin: 10px auto;
+}
+
+@keyframes inout {
+  0%    { transform: scale(0, 0); }
+  40%   { transform: scale(4, 4); }
+  80%   { transform: scale(1, 1); }
+  100%  { transform: scale(1, 1); }
+}
+@-webkit-keyframes inout { /* Safari & Chrome */
+  0%   { -webkit-transform: scale(0, 0); }
+  40%  { -webkit-transform: scale(4, 4); }
+  80%  { -webkit-transform: scale(1, 1); }
+  100% { -webkit-transform: scale(1, 1); }
 }

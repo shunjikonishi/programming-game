@@ -11,6 +11,7 @@ function TextEditor(name, $textarea, con) {
 			"readOnly": true
 		});
 		editor.addLineClass(line, "background", "editor-readonly");
+		consumedLine = line;
 	}
 	function isReadOnly(line) {
 		return line === 0;
@@ -23,6 +24,19 @@ function TextEditor(name, $textarea, con) {
 			"line": 1,
 			"head": 0
 		});
+	}
+	function consumeLine() {
+		var line = consumedLine + 1,
+			lineCount = editor.lineCount() - 1;
+		while (line < lineCount) {
+			var text = editor.getLine(line);
+			setReadOnly(line);
+			if (text) {
+				return text;
+			}
+			line++;
+		}
+		return null;
 	}
 	function setCommand(text, ins) {
 		var line = editor.getCursor().line;
@@ -124,12 +138,13 @@ function TextEditor(name, $textarea, con) {
 			"ch": change.to.ch
 		});
 	}
-	var editor = CodeMirror.fromTextArea($textarea[0], {
-		"mode": "javascript",
-		"lineNumbers": true,
-		"readOnly": true,
-		"styleActiveLine": true
-	});
+	var consumedLine = 0,
+		editor = CodeMirror.fromTextArea($textarea[0], {
+			"mode": "javascript",
+			"lineNumbers": true,
+			"readOnly": true,
+			"styleActiveLine": true
+		});
 	$.extend(this, {
 		"reset": reset,
 		"setCommand": setCommand,
@@ -138,6 +153,7 @@ function TextEditor(name, $textarea, con) {
 		"del": del,
 		"undo": undo,
 		"getCommands": getCommands,
-		"readOnly": readOnly
+		"readOnly": readOnly,
+		"consumeLine": consumeLine
 	});
 }

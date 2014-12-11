@@ -17,9 +17,15 @@ pg.Application = function(gameId, sessionId) {
 			entry("heroku");
 		});
 		$gameStart.click(function() {
+			var setting = new GameSetting();
 			$gameStart.hide();
-			codingStart();
-			stopWatch.start(new GameSetting().codingTime(), executeStart());
+			con.request({
+				"command": "codingStart",
+				"data": {
+					"codingTime": setting.codingTime(),
+					"gameTime": setting.gameTime()
+				}
+			});
 		});
 	}
 	function initConnection(con) {
@@ -35,6 +41,8 @@ pg.Application = function(gameId, sessionId) {
 			ctrl.getEditor().applyChange(data);
 		});
 		con.on("playerStatus", updatePlayerStatus);
+		con.on("codingStart", codingStart);
+		con.on("turnAction", game.turnAction);
 		con.request({
 			"command": "status",
 			"success": function(data) {
@@ -118,7 +126,6 @@ pg.Application = function(gameId, sessionId) {
 	}
 	function updateButtons() {
 		function updateEntryButton($btn, player) {
-console.log("updateEntryButton", $btn, player.isEntried());
 			$btn.prop("disabled", player.isEntried());
 			if (player.getSessionId() === sessionId) {
 				$btn.text(MSG.yourEntry);
@@ -138,12 +145,63 @@ console.log("updateEntryButton", $btn, player.isEntried());
 		updateEntryButton($herokuEntry, h);
 		resetEditors();
 	}
-	function codingStart() {
+	function codingStart(setting) {
+		$(".btn-test").prop("disabled", false);
+		$gameStart.hide();
+		if (stopWatch.isRunning()) {
+			return;
+		}
+		$salesforceEntry.prop("disabled", true);
+		$herokuEntry.prop("disabled", true);
+		game.showMessage(MSG.codingStart);
 		salesforceCtrl.codingStart();
 		herokuCtrl.codingStart();
+		stopWatch.start(setting.codingTime, function() {
+			executeStart(setting.gameTime);
+		});
 	}
-	function executeStart() {
-		
+	function executeStart(gameTime) {
+		$(".btn-test").prop("disabled", true);
+		game.showMessage(MSG.gameStart);
+		game.start(gameTime);
+		if (game.getSalesforce().getSessionId() === sessionId) {
+			observe("salesforce", game.getSalesforce(), salesforceCtrl.getEditor());
+		}
+		if (game.getHeroku().getSessionId() === sessionId) {
+			observe("heroku", game.getHeroku(), herokuCtrl.getEditor());
+		}
+	}
+	function observe(name, player, editor) {
+		function doObserve() {
+			if (!game.isRunning()) {
+				return;
+			}
+			if (player.commandCount() === 0) {
+				var text = editor.consumeLine();
+				if (text) {
+					interpreter.run(text);
+				}
+			}
+			var cmd = player.commandCount() > 0 ? player.nextCommand() : {
+				"command": "wait"
+			};
+			con.request({
+				"command": "playerAction",
+				"data": {
+					"player": name,
+					"action": cmd
+				}
+			});
+			setTimeout(doObserve, 500);
+		}
+		var context = {
+			"p": player,
+			"onError": function(msg) {
+				console.log(msg);
+				player.wait();
+			}
+		}, interpreter = new Interpreter(context, new Parser());
+		doObserve();
 	}
 	function random(n) {
 		return Math.floor(Math.random() * n);
