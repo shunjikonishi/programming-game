@@ -389,6 +389,7 @@ function Game($el, sessionId) {
 				break;
 		}
 		if (end) {
+			player.pos(pos.x, pos.y);
 			return false;
 		}
 		if (!wait) {
@@ -476,9 +477,15 @@ function Game($el, sessionId) {
 			hpos1 = heroku.pos(),
 			bpos1 = bug.pos();
 		if (!runCommand(salesforce, data.salesforce)) {
+			drop(salesforce, function() {
+				salesforce.element().hide();
+			});
 			sOut = true;
 		}
 		if (!runCommand(heroku, data.heroku)) {
+			drop(heroku, function() {
+				heroku.element().hide();
+			});
 			hOut = true;
 		}
 		runCommand(bug, bug.nextCommand());
@@ -529,6 +536,17 @@ function Game($el, sessionId) {
 			}
 		}
 	}
+	function drop(player, callback) {
+		var animate = new Animate(player.element());
+		animate.show({
+			"name": "drop",
+			"duration": "2s"
+		});
+		setTimeout(function() {
+			animate.reset();
+			callback();
+		}, 2000);
+	}
 	function test(player, commands) {
 		function gameover() {
 			player.reset();
@@ -544,7 +562,7 @@ function Game($el, sessionId) {
 					if (runCommand(player, player.nextCommand())) {
 						run();
 					} else {
-						gameover();
+						drop(player, gameover);
 					}
 				} else {
 					gameover();
@@ -1471,6 +1489,11 @@ function Animate($el) {
 			}
 		}, durationToMillis(params["animation-duration"]));
 	}
+	function reset() {
+		$el.css("animation-name", "");
+		$el.css("-webkit-animation-name", "");
+		$el.show();
+	}
 	function element() {
 		return $el;
 	}
@@ -1487,7 +1510,8 @@ function Animate($el) {
 	}
 	$.extend(this, {
 		"show" : show,
-		"element": element
+		"element": element,
+		"reset": reset
 	});
 }
 })(jQuery);

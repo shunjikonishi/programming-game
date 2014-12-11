@@ -73,6 +73,11 @@ function Animate($el) {
 			}
 		}, durationToMillis(params["animation-duration"]));
 	}
+	function reset() {
+		$el.css("animation-name", "");
+		$el.css("-webkit-animation-name", "");
+		$el.show();
+	}
 	function element() {
 		return $el;
 	}
@@ -89,6 +94,7 @@ function Animate($el) {
 	}
 	$.extend(this, {
 		"show" : show,
-		"element": element
+		"element": element,
+		"reset": reset
 	});
 }
