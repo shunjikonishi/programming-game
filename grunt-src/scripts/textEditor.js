@@ -100,7 +100,6 @@ function TextEditor(name, $textarea, con) {
 		editor.undo();
 	}
 	function onChange(instance, change) {
-		console.log("onChange", change);
 		var data = {
 			"name": name,
 			"from": {

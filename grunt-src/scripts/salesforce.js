@@ -41,6 +41,9 @@ function SalesforceCtrl(game, con) {
 		enableButtons(b);
 		editor.setChangeHandling(b);
 	}
+	function gameEnd() {
+		editor.setChangeHandling(false);
+	}
 	function getEditor() {
 		return editor;
 	}
@@ -49,6 +52,7 @@ function SalesforceCtrl(game, con) {
 	init();
 	$.extend(this, {
 		"getEditor": getEditor,
-		"codingStart": codingStart
+		"codingStart": codingStart,
+		"gameEnd": gameEnd
 	});
 }

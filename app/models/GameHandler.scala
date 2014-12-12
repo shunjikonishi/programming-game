@@ -16,7 +16,8 @@ class GameHandler(room: GameRoom, sessionId: String) extends RoomHandler(room) w
     }
     addHandler("status") { command =>
       command.json(JsObject(Seq(
-        "status" -> room.status.map(_.toJson).getOrElse(JsNull)
+        "status" -> room.status.map(_.toJson).getOrElse(JsNull),
+        "replayData" -> JsArray(room.commands.map(_.toJson))
       )))
     }
     addHandler("entry") { command =>

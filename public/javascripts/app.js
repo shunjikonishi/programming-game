@@ -22,6 +22,12 @@ pg.Application = function(gameId, sessionId) {
 		$gameGen.click(function() {
 			initGame();
 		});
+		$replay.click(function() {
+			if (replays && replays.length > 0) {
+				$replay.hide();
+				game.replay(replays);
+			}
+		});
 		$salesforceEntry.click(function() {
 			entry("salesforce");
 		});
@@ -55,11 +61,19 @@ pg.Application = function(gameId, sessionId) {
 		con.on("playerStatus", updatePlayerStatus);
 		con.on("codingStart", codingStart);
 		con.on("turnAction", game.turnAction);
+		con.on("gameEnd", function(data) {
+			salesforceCtrl.gameEnd();
+			herokuCtrl.gameEnd();
+			game.getSalesforce().entry(null);
+			game.getHeroku().entry(null);
+			replays = data;
+			updateButtons();
+		});
 		con.request({
 			"command": "status",
 			"success": function(data) {
 				if (data.status) {
-					updateStatus(data.status);
+					updateStatus(data.status, data.replayData);
 				} else {
 					initGame();
 					updateButtons();
@@ -106,8 +120,10 @@ pg.Application = function(gameId, sessionId) {
 			"command": "initGame",
 			"data": json
 		});
+		replays = [];
+		updateButtons();
 	}
-	function updateStatus(status) {
+	function updateStatus(status, replayData) {
 		function resetPlayer(cp, sp) {
 			cp.entry(sp.sessionId || null);
 			cp.reset(sp.x, sp.y);
@@ -125,6 +141,9 @@ pg.Application = function(gameId, sessionId) {
 		resetPlayer(game.getSalesforce(), status.salesforce);
 		resetPlayer(game.getHeroku(), status.heroku);
 		resetPlayer(game.getBug(), status.bug);
+		if (replayData && replayData.length > 0) {
+			replays = replayData;
+		}
 		updateButtons();
 	}
 	function updatePlayerStatus(ps) {
@@ -145,7 +164,7 @@ pg.Application = function(gameId, sessionId) {
 	}
 	function updateButtons() {
 		function updateEntryButton($btn, player) {
-			$btn.prop("disabled", player.isEntried());
+			$btn.prop("disabled", hasReplay || player.isEntried());
 			if (player.getSessionId() === sessionId) {
 				$btn.text(MSG.yourEntry);
 			} else if (player.isEntried()) {
@@ -156,11 +175,15 @@ pg.Application = function(gameId, sessionId) {
 		}
 		var s = game.getSalesforce(),
 			h = game.getHeroku(),
+			hasReplay = replays && replays.length > 0,
 			entried = s.getSessionId() === sessionId || h.getSessionId() === sessionId,
 			noEntry = !(s.isEntried() || h.isEntried());
 		$gameGen.prop("disabled", !(entried || noEntry));
 		$("#game-setting-table").find(":input").prop("disabled", !(entried || noEntry));
+		$gameStart.toggle(!hasReplay);
 		$gameStart.prop("disabled", !entried);
+		$replay.toggle(hasReplay);
+		$(".header-label").hide();
 		updateEntryButton($salesforceEntry, s);
 		updateEntryButton($herokuEntry, h);
 		resetEditors();
@@ -194,9 +217,6 @@ pg.Application = function(gameId, sessionId) {
 	function observe(name, player, editor) {
 		function doObserve() {
 			if (!game.isRunning()) {
-				con.request({
-					"command": "gameEnd"
-				});
 				return;
 			}
 			if (player.commandCount() === 0) {
@@ -267,11 +287,14 @@ pg.Application = function(gameId, sessionId) {
 		});
 	}
 	var con = new room.Connection(location.protocol.replace("http", "ws") + "//" + location.host + "/ws/" + gameId),
-		game = new Game($("#game"), sessionId),
+		game = new Game($("#game"), sessionId, con),
 		salesforceCtrl = new SalesforceCtrl(game, con),
 		herokuCtrl = new HerokuCtrl(game, con),
 		stopWatch = new StopWatch($("#stopwatch")),
+		watch = false,
+		replays = [],
 		$gameGen = $("#game-gen"),
+		$replay = $("#replay"),
 		$salesforceEntry = $("#salesforce-entry"),
 		$herokuEntry = $("#heroku-entry"),
 		$gameStart = $("#game-start");
@@ -280,7 +303,7 @@ pg.Application = function(gameId, sessionId) {
 };
 
 
-function Game($el, sessionId) {
+function Game($el, sessionId, con) {
 	function TestControl() {
 		function isRunning() {
 			return players.length > 0;
@@ -450,7 +473,7 @@ function Game($el, sessionId) {
 		}
 		return true;
 	}
-	function turnAction(data) {
+	function turnAction(data, replay) {
 		function same(p1, p2) {
 			return p1.x === p2.x && p1.y === p2.y;
 		}
@@ -481,19 +504,27 @@ function Game($el, sessionId) {
 			}
 			return null;
 		}
-		function gameover(winner) {
+		function gameEnd() {
 			running = false;
+			if (!replay) {
+				con.request({
+					"command": "gameEnd"
+				});
+			}
+		}
+		function gameover(winner) {
 			showMessage({
 				"message": MSG.format(MSG.win, winner),
 				"duration": "4s"
 			}, winner.toLowerCase());
+			gameEnd();
 		}
 		function draw() {
-			running = false;
 			showMessage({
 				"message": MSG.draw,
 				"duration": "4s"
 			});
+			gameEnd();
 		}
 		function showConflict(pos) {
 			var $conflict = $("#conflict").show();
@@ -538,9 +569,11 @@ function Game($el, sessionId) {
 			hpos2 = heroku.pos(),
 			bpos2 = bug.pos();
 		if (conflict(spos1, spos2, bpos1, bpos2)) {
+			bug.pos(spos2.x, spos2.y);
 			sOut = true;
 		}
 		if (conflict(hpos1, hpos2, bpos1, bpos2)) {
+			bug.pos(hpos2.x, hpos2.y);
 			hOut = true;
 		}
 		if (!sOut && !hOut) {
@@ -592,15 +625,18 @@ function Game($el, sessionId) {
 			callback();
 		}, 2000);
 	}
+	function showObjects(b) {
+		$.each(allFields(), function(idx, f) {
+			if (f.object()) {
+				f.object().visible(b);
+			}
+		});
+	}
 	function test(player, commands) {
 		function gameover() {
 			testCtrl.finish(player);
 			player.reset();
-			$.each(allFields(), function(idx, f) {
-				if (f.object()) {
-					f.object().visible(true);
-				}
-			});
+			showObjects(true);
 		}
 		function run() {
 			setTimeout(function() {
@@ -691,6 +727,24 @@ function Game($el, sessionId) {
 		}
 		animate.show(options);
 	}
+	function replay(commands) {
+		function run() {
+			turnAction(commands[idx++], true);
+			if (idx < commands.length) {
+				setTimeout(run, 400);
+			} else {
+				$("#replay").show();
+				$("#turnLabel").hide();
+			}
+		}
+		var idx = 0;
+		salesforce.reset();
+		heroku.reset();
+		bug.reset();
+		showObjects(true);
+		start(commands.length);
+		setTimeout(run, 400);
+	}
 	var self = this,
 		fields = [],
 		salesforce = createPlayer("/assets/images/salesforce.png", "#salesforce-point"),
@@ -718,7 +772,8 @@ function Game($el, sessionId) {
 		"showMessage": showMessage,
 		"start": start,
 		"isRunning": isRunning,
-		"turnAction": turnAction
+		"turnAction": turnAction,
+		"replay": replay
 	});
 }
 
@@ -1087,6 +1142,9 @@ function SalesforceCtrl(game, con) {
 		enableButtons(b);
 		editor.setChangeHandling(b);
 	}
+	function gameEnd() {
+		editor.setChangeHandling(false);
+	}
 	function getEditor() {
 		return editor;
 	}
@@ -1095,7 +1153,8 @@ function SalesforceCtrl(game, con) {
 	init();
 	$.extend(this, {
 		"getEditor": getEditor,
-		"codingStart": codingStart
+		"codingStart": codingStart,
+		"gameEnd": gameEnd
 	});
 }
 function HerokuCtrl(game, con) {
@@ -1113,11 +1172,15 @@ function HerokuCtrl(game, con) {
 		editor.readOnly(!b);
 		editor.setChangeHandling(b);
 	}
+	function gameEnd() {
+		editor.setChangeHandling(false);
+	}
 	var editor = new TextEditor("heroku", $("#heroku-editor"), con);
 	init();
 	$.extend(this, {
 		"getEditor": getEditor,
-		"codingStart": codingStart
+		"codingStart": codingStart,
+		"gameEnd": gameEnd
 	});
 }
 function TextEditor(name, $textarea, con) {
@@ -1222,7 +1285,6 @@ function TextEditor(name, $textarea, con) {
 		editor.undo();
 	}
 	function onChange(instance, change) {
-		console.log("onChange", change);
 		var data = {
 			"name": name,
 			"from": {
@@ -1464,7 +1526,6 @@ function StopWatch($el) {
 		if (second > 0) {
 			setTimeout(countDown, 1000);
 		} else {
-console.log("stopWatch finish", callback);
 			running = false;
 			$el.hide();
 			if (callback) {
@@ -1480,6 +1541,9 @@ console.log("stopWatch finish", callback);
 		show();
 		setTimeout(countDown, 1000);
 	}
+	function hide() {
+		$el.hide();
+	}
 	function isRunning() { 
 		return running;
 	}
@@ -1488,7 +1552,8 @@ console.log("stopWatch finish", callback);
 		running = false;
 	$.extend(this, {
 		"start": start,
-		"isRunning": isRunning
+		"isRunning": isRunning,
+		"hide": hide
 	});
 }
 function Animate($el) {

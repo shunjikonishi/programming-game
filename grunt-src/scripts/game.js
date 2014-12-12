@@ -1,4 +1,4 @@
-function Game($el, sessionId) {
+function Game($el, sessionId, con) {
 	function TestControl() {
 		function isRunning() {
 			return players.length > 0;
@@ -168,7 +168,7 @@ function Game($el, sessionId) {
 		}
 		return true;
 	}
-	function turnAction(data) {
+	function turnAction(data, replay) {
 		function same(p1, p2) {
 			return p1.x === p2.x && p1.y === p2.y;
 		}
@@ -199,19 +199,27 @@ function Game($el, sessionId) {
 			}
 			return null;
 		}
-		function gameover(winner) {
+		function gameEnd() {
 			running = false;
+			if (!replay) {
+				con.request({
+					"command": "gameEnd"
+				});
+			}
+		}
+		function gameover(winner) {
 			showMessage({
 				"message": MSG.format(MSG.win, winner),
 				"duration": "4s"
 			}, winner.toLowerCase());
+			gameEnd();
 		}
 		function draw() {
-			running = false;
 			showMessage({
 				"message": MSG.draw,
 				"duration": "4s"
 			});
+			gameEnd();
 		}
 		function showConflict(pos) {
 			var $conflict = $("#conflict").show();
@@ -256,9 +264,11 @@ function Game($el, sessionId) {
 			hpos2 = heroku.pos(),
 			bpos2 = bug.pos();
 		if (conflict(spos1, spos2, bpos1, bpos2)) {
+			bug.pos(spos2.x, spos2.y);
 			sOut = true;
 		}
 		if (conflict(hpos1, hpos2, bpos1, bpos2)) {
+			bug.pos(hpos2.x, hpos2.y);
 			hOut = true;
 		}
 		if (!sOut && !hOut) {
@@ -310,15 +320,18 @@ function Game($el, sessionId) {
 			callback();
 		}, 2000);
 	}
+	function showObjects(b) {
+		$.each(allFields(), function(idx, f) {
+			if (f.object()) {
+				f.object().visible(b);
+			}
+		});
+	}
 	function test(player, commands) {
 		function gameover() {
 			testCtrl.finish(player);
 			player.reset();
-			$.each(allFields(), function(idx, f) {
-				if (f.object()) {
-					f.object().visible(true);
-				}
-			});
+			showObjects(true);
 		}
 		function run() {
 			setTimeout(function() {
@@ -409,6 +422,24 @@ function Game($el, sessionId) {
 		}
 		animate.show(options);
 	}
+	function replay(commands) {
+		function run() {
+			turnAction(commands[idx++], true);
+			if (idx < commands.length) {
+				setTimeout(run, 400);
+			} else {
+				$("#replay").show();
+				$("#turnLabel").hide();
+			}
+		}
+		var idx = 0;
+		salesforce.reset();
+		heroku.reset();
+		bug.reset();
+		showObjects(true);
+		start(commands.length);
+		setTimeout(run, 400);
+	}
 	var self = this,
 		fields = [],
 		salesforce = createPlayer("/assets/images/salesforce.png", "#salesforce-point"),
@@ -436,7 +467,8 @@ function Game($el, sessionId) {
 		"showMessage": showMessage,
 		"start": start,
 		"isRunning": isRunning,
-		"turnAction": turnAction
+		"turnAction": turnAction,
+		"replay": replay
 	});
 }
 

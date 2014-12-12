@@ -13,10 +13,14 @@ function HerokuCtrl(game, con) {
 		editor.readOnly(!b);
 		editor.setChangeHandling(b);
 	}
+	function gameEnd() {
+		editor.setChangeHandling(false);
+	}
 	var editor = new TextEditor("heroku", $("#heroku-editor"), con);
 	init();
 	$.extend(this, {
 		"getEditor": getEditor,
-		"codingStart": codingStart
+		"codingStart": codingStart,
+		"gameEnd": gameEnd
 	});
 }

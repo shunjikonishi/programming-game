@@ -11,7 +11,6 @@ function StopWatch($el) {
 		if (second > 0) {
 			setTimeout(countDown, 1000);
 		} else {
-console.log("stopWatch finish", callback);
 			running = false;
 			$el.hide();
 			if (callback) {
@@ -27,6 +26,9 @@ console.log("stopWatch finish", callback);
 		show();
 		setTimeout(countDown, 1000);
 	}
+	function hide() {
+		$el.hide();
+	}
 	function isRunning() { 
 		return running;
 	}
@@ -35,6 +37,7 @@ console.log("stopWatch finish", callback);
 		running = false;
 	$.extend(this, {
 		"start": start,
-		"isRunning": isRunning
+		"isRunning": isRunning,
+		"hide": hide
 	});
 }
