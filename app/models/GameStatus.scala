@@ -5,7 +5,8 @@ import play.api.libs.json._
 case class GameStatus(
   setting: GameSetting,
   fields: Seq[FieldObject],
-  players: Map[String, Player]
+  players: Map[String, Player],
+  running: Boolean = false
 ) {
   def salesforce = players("salesforce")
   def heroku = players("heroku")
@@ -15,21 +16,20 @@ case class GameStatus(
     copy(players = players + (player -> players(player).entry(sessionId)))
   }
 
-  def retire(player: String, sessionId: String) = {
-    copy(players = players + (player -> players(player).retire(sessionId)))
-  }
   def reset = {
     copy(players = players ++ Map(
       "salesforce" -> salesforce.reset,
       "heroku" -> heroku.reset
-    ))
+    ),
+    running = false)
   }
   def toJson = JsObject(Seq(
     "setting" -> setting.toJson,
     "salesforce" -> salesforce.toJson,
     "heroku" -> heroku.toJson,
     "bug" -> bug.toJson,
-    "fields" -> JsArray(fields.map(_.toJson))
+    "fields" -> JsArray(fields.map(_.toJson)),
+    "running" -> JsBoolean(running)
   ))
 }
 
@@ -48,7 +48,8 @@ object GameStatus {
         case _ => 
           throw new IllegalArgumentException()
       },
-      players = players
+      players = players,
+      running = (json \ "running").asOpt[Boolean].getOrElse(false)
     )
   }
 }

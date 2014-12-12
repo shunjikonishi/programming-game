@@ -144,9 +144,10 @@ pg.Application = function(gameId, sessionId) {
 		}
 		var s = game.getSalesforce(),
 			h = game.getHeroku(),
-			entried = s.getSessionId() === sessionId || h.getSessionId() === sessionId;
-		$gameGen.prop("disabled", !entried);
-		$("#game-setting-table").find(":input").prop("disabled", !entried);
+			entried = s.getSessionId() === sessionId || h.getSessionId() === sessionId,
+			noEntry = !(s.isEntried() || h.isEntried());
+		$gameGen.prop("disabled", !(entried || noEntry));
+		$("#game-setting-table").find(":input").prop("disabled", !(entried || noEntry));
 		$gameStart.prop("disabled", !entried);
 		updateEntryButton($salesforceEntry, s);
 		updateEntryButton($herokuEntry, h);
@@ -253,7 +254,7 @@ pg.Application = function(gameId, sessionId) {
 			}
 		});
 	}
-	var con = new room.Connection(location.protocol.replace("http", "ws") + location.host + "/ws/" + gameId),
+	var con = new room.Connection(location.protocol.replace("http", "ws") + "//" + location.host + "/ws/" + gameId),
 		game = new Game($("#game"), sessionId),
 		salesforceCtrl = new SalesforceCtrl(game, con),
 		herokuCtrl = new HerokuCtrl(game, con),

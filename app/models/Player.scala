@@ -6,9 +6,6 @@ case class Player(x: Int, y: Int, sessionId: Option[String]) {
   def isEntried = sessionId.isDefined
 
   def entry(id: String) = copy(sessionId=Some(id))
-  def retire(id: String): Player = sessionId.filter(_ == id)
-    .map(_ => copy(sessionId=None))
-    .getOrElse(this)
   def reset = copy(sessionId=None)
 
   def toJson = JsObject(Seq(

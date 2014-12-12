@@ -41,6 +41,17 @@ class GameRoom(name: String) extends DefaultRoom(name) {
     actor ! GameEnd
   }
 
+  def doCodingStart(data: JsValue) = {
+    status_.filter(!_.running).foreach { s =>
+      status_ = Some(s.copy(running=true))
+      broadcast(new CommandResponse("codingStart", data).toString)
+    }
+  }
+  
+  def codingStart(data: JsValue) = {
+    actor ! CodingStart(data)
+  }
+
   private def doSendAction(player: String, action: JsValue) = {
     def canSend(act: ActionPair): Boolean = status_.map { status =>
       (act.salesforce.isDefined && act.heroku.isDefined) ||
@@ -87,6 +98,8 @@ class GameRoom(name: String) extends DefaultRoom(name) {
         sender ! doEntry(player, sessionId)
       case SendAction(player, action) => 
         doSendAction(player, action)
+      case CodingStart(data) =>
+        doCodingStart(data)
       case GameEnd =>
         status_ = status_.map(_.reset)
       case x => 
@@ -100,6 +113,7 @@ class GameRoom(name: String) extends DefaultRoom(name) {
   private case class UpdateGameStatus(status: GameStatus)
   private case class Entry(player: String, sessionId: String)
   private case class SendAction(player: String, action: JsValue)
+  private case class CodingStart(data: JsValue)
   private case class GameEnd()
 }
 

@@ -1,4 +1,48 @@
 function Game($el, sessionId) {
+	function TestControl() {
+		function isRunning() {
+			return players.length > 0;
+		}
+		function isPlayerRunning(p) {
+			return indexOf(p) !== -1;
+		}
+		function indexOf(p) {
+			for (var i=0; i<players.length; i++) {
+				if (players[i].name() === p.name()) {
+					return i;
+				}
+			}
+			return -1;
+		}
+		function start(p) {
+			players.push(p);
+		}
+		function finish(p) {
+			var idx = indexOf(p);
+			if (idx !== -1) {
+				players.splice(idx, 1);
+			}
+			if (players.length === 0) {
+				abortFlag = false;
+			}
+		}
+		function isAbort() {
+			return abortFlag;
+		}
+		function abort() {
+			abortFlag = true;
+		}
+		var players = [],
+			abortFlag = false;
+		$.extend(this, {
+			"isRunning": isRunning,
+			"isPlayerRunning": isPlayerRunning,
+			"start": start,
+			"finish": finish,
+			"abort": abort,
+			"isAbort": isAbort
+		});
+	}
 	function reset(width, height) {
 		self.width = width;
 		self.height = height;
@@ -268,6 +312,7 @@ function Game($el, sessionId) {
 	}
 	function test(player, commands) {
 		function gameover() {
+			testCtrl.finish(player);
 			player.reset();
 			$.each(allFields(), function(idx, f) {
 				if (f.object()) {
@@ -277,6 +322,11 @@ function Game($el, sessionId) {
 		}
 		function run() {
 			setTimeout(function() {
+				if (testCtrl.isAbort()) {
+					gameover();
+					start(turnCount);
+					return;
+				}
 				if (player.commandCount() > 0) {
 					if (runCommand(player, player.nextCommand())) {
 						run();
@@ -288,6 +338,10 @@ function Game($el, sessionId) {
 				}
 			}, 200);
 		}
+		if (testCtrl.isPlayerRunning(player)) {
+			return;
+		}
+		testCtrl.start(player);
 		var context = {
 			"p": player,
 			"onError": function(msg) {
@@ -301,23 +355,40 @@ function Game($el, sessionId) {
 		run();
 	}
 	function bugTest(cnt) {
+		function gameover() {
+			bug.reset();
+			testCtrl.finish(bug);
+		}
 		function run() {
 			setTimeout(function() {
+				if (testCtrl.isAbort()) {
+					gameover();
+					start(turnCount);
+					return;
+				}
 				if (cnt > 0) {
 					runCommand(bug, bug.nextCommand());
 					run();
 				} else {
-					bug.reset();
+					gameover();
 				}
 				cnt--;
 			}, 200);
 		}
+		if (testCtrl.isPlayerRunning(bug)) {
+			return;
+		}
+		testCtrl.start(bug);
 		run();
 	}
 	function start(gameTime) {
-		running = true;
 		turnCount = gameTime;
 		currentTurn = 0;
+		if (testCtrl.isRunning()) {
+			testCtrl.abort();
+			return;
+		}
+		running = true;
 		showTurnLabel();
 	}
 	function isRunning() {
@@ -346,7 +417,8 @@ function Game($el, sessionId) {
 		animate = new Animate($("#message-dialog")),
 		running = false,
 		turnCount = -1,
-		currentTurn = -1;
+		currentTurn = -1,
+		testCtrl = new TestControl();
 	$el.append(bug.element());
 	$.extend(this, {
 		"field": field,

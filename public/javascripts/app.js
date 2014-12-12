@@ -156,9 +156,10 @@ pg.Application = function(gameId, sessionId) {
 		}
 		var s = game.getSalesforce(),
 			h = game.getHeroku(),
-			entried = s.getSessionId() === sessionId || h.getSessionId() === sessionId;
-		$gameGen.prop("disabled", !entried);
-		$("#game-setting-table").find(":input").prop("disabled", !entried);
+			entried = s.getSessionId() === sessionId || h.getSessionId() === sessionId,
+			noEntry = !(s.isEntried() || h.isEntried());
+		$gameGen.prop("disabled", !(entried || noEntry));
+		$("#game-setting-table").find(":input").prop("disabled", !(entried || noEntry));
 		$gameStart.prop("disabled", !entried);
 		updateEntryButton($salesforceEntry, s);
 		updateEntryButton($herokuEntry, h);
@@ -265,7 +266,7 @@ pg.Application = function(gameId, sessionId) {
 			}
 		});
 	}
-	var con = new room.Connection(location.protocol.replace("http", "ws") + location.host + "/ws/" + gameId),
+	var con = new room.Connection(location.protocol.replace("http", "ws") + "//" + location.host + "/ws/" + gameId),
 		game = new Game($("#game"), sessionId),
 		salesforceCtrl = new SalesforceCtrl(game, con),
 		herokuCtrl = new HerokuCtrl(game, con),
@@ -280,6 +281,50 @@ pg.Application = function(gameId, sessionId) {
 
 
 function Game($el, sessionId) {
+	function TestControl() {
+		function isRunning() {
+			return players.length > 0;
+		}
+		function isPlayerRunning(p) {
+			return indexOf(p) !== -1;
+		}
+		function indexOf(p) {
+			for (var i=0; i<players.length; i++) {
+				if (players[i].name() === p.name()) {
+					return i;
+				}
+			}
+			return -1;
+		}
+		function start(p) {
+			players.push(p);
+		}
+		function finish(p) {
+			var idx = indexOf(p);
+			if (idx !== -1) {
+				players.splice(idx, 1);
+			}
+			if (players.length === 0) {
+				abortFlag = false;
+			}
+		}
+		function isAbort() {
+			return abortFlag;
+		}
+		function abort() {
+			abortFlag = true;
+		}
+		var players = [],
+			abortFlag = false;
+		$.extend(this, {
+			"isRunning": isRunning,
+			"isPlayerRunning": isPlayerRunning,
+			"start": start,
+			"finish": finish,
+			"abort": abort,
+			"isAbort": isAbort
+		});
+	}
 	function reset(width, height) {
 		self.width = width;
 		self.height = height;
@@ -549,6 +594,7 @@ function Game($el, sessionId) {
 	}
 	function test(player, commands) {
 		function gameover() {
+			testCtrl.finish(player);
 			player.reset();
 			$.each(allFields(), function(idx, f) {
 				if (f.object()) {
@@ -558,6 +604,11 @@ function Game($el, sessionId) {
 		}
 		function run() {
 			setTimeout(function() {
+				if (testCtrl.isAbort()) {
+					gameover();
+					start(turnCount);
+					return;
+				}
 				if (player.commandCount() > 0) {
 					if (runCommand(player, player.nextCommand())) {
 						run();
@@ -569,6 +620,10 @@ function Game($el, sessionId) {
 				}
 			}, 200);
 		}
+		if (testCtrl.isPlayerRunning(player)) {
+			return;
+		}
+		testCtrl.start(player);
 		var context = {
 			"p": player,
 			"onError": function(msg) {
@@ -582,23 +637,40 @@ function Game($el, sessionId) {
 		run();
 	}
 	function bugTest(cnt) {
+		function gameover() {
+			bug.reset();
+			testCtrl.finish(bug);
+		}
 		function run() {
 			setTimeout(function() {
+				if (testCtrl.isAbort()) {
+					gameover();
+					start(turnCount);
+					return;
+				}
 				if (cnt > 0) {
 					runCommand(bug, bug.nextCommand());
 					run();
 				} else {
-					bug.reset();
+					gameover();
 				}
 				cnt--;
 			}, 200);
 		}
+		if (testCtrl.isPlayerRunning(bug)) {
+			return;
+		}
+		testCtrl.start(bug);
 		run();
 	}
 	function start(gameTime) {
-		running = true;
 		turnCount = gameTime;
 		currentTurn = 0;
+		if (testCtrl.isRunning()) {
+			testCtrl.abort();
+			return;
+		}
+		running = true;
 		showTurnLabel();
 	}
 	function isRunning() {
@@ -627,7 +699,8 @@ function Game($el, sessionId) {
 		animate = new Animate($("#message-dialog")),
 		running = false,
 		turnCount = -1,
-		currentTurn = -1;
+		currentTurn = -1,
+		testCtrl = new TestControl();
 	$el.append(bug.element());
 	$.extend(this, {
 		"field": field,
@@ -771,6 +844,9 @@ function Player(imageSrc, initialX, initialY, $point) {
 		$div.addClass("player");
 		reset(initialX, initialY);
 	}
+	function name() {
+		return isSalesforce() ? "salesforce" : isHeroku() ? "heroku" : "bug";
+	}
 	function isSalesforce() {
 		return imageSrc.indexOf("salesforce") !== -1;
 	}
@@ -880,6 +956,7 @@ function Player(imageSrc, initialX, initialY, $point) {
 		point = 0;
 
 	$.extend(this, {
+		"name": name,
 		"element": element,
 		"isSalesforce": isSalesforce,
 		"isHeroku": isHeroku,

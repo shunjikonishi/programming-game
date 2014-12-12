@@ -6,6 +6,9 @@ function Player(imageSrc, initialX, initialY, $point) {
 		$div.addClass("player");
 		reset(initialX, initialY);
 	}
+	function name() {
+		return isSalesforce() ? "salesforce" : isHeroku() ? "heroku" : "bug";
+	}
 	function isSalesforce() {
 		return imageSrc.indexOf("salesforce") !== -1;
 	}
@@ -115,6 +118,7 @@ function Player(imageSrc, initialX, initialY, $point) {
 		point = 0;
 
 	$.extend(this, {
+		"name": name,
 		"element": element,
 		"isSalesforce": isSalesforce,
 		"isHeroku": isHeroku,

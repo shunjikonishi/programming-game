@@ -34,7 +34,7 @@ class GameHandler(room: GameRoom, sessionId: String) extends RoomHandler(room) w
       CommandResponse.None
     }
     addHandler("codingStart") { command =>
-      broadcast(command.json(command.data))
+      room.codingStart(command.data)
       CommandResponse.None
     }
     addHandler("gameEnd") { command =>
