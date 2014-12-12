@@ -31,6 +31,7 @@ function Player(imageSrc, initialX, initialY, $point) {
 			initialY = ny;
 		} 
 		pos(initialX, initialY);
+		$div.show();
 	}
 	function nextCommand() {
 		return commands.shift();

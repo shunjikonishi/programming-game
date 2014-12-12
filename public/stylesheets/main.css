@@ -203,6 +203,20 @@ img.salesforce, img.heroku {
 	display: inline-block;
 	padding: 20px;
 }
+
+#result-dialog .modal-dialog {
+	width: 514px;
+}
+
+#result-dialog .modal-body {
+	padding: 0;
+}
+
+#result-dialog img {
+	width: 512px;
+	height: 384px;
+}
+
 .animateDialog-default {
 	position: fixed;
 	left: 50%;

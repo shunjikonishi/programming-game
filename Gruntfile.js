@@ -31,6 +31,7 @@ module.exports = function(grunt) {
                     "grunt-src/scripts/interpreter.js",
                     "grunt-src/scripts/stopWatch.js",
                     "grunt-src/scripts/animate.js",
+                    "grunt-src/scripts/resultDialog.js",
                     "grunt-src/scripts/outro.txt"
                 ],
                 dest: "public/javascripts/app.js"

@@ -513,17 +513,11 @@ function Game($el, sessionId, con) {
 			}
 		}
 		function gameover(winner) {
-			showMessage({
-				"message": MSG.format(MSG.win, winner),
-				"duration": "4s"
-			}, winner.toLowerCase());
+			resultDialog.win(winner);
 			gameEnd();
 		}
 		function draw() {
-			showMessage({
-				"message": MSG.draw,
-				"duration": "4s"
-			});
+			resultDialog.draw();
 			gameEnd();
 		}
 		function showConflict(pos) {
@@ -734,7 +728,7 @@ function Game($el, sessionId, con) {
 				setTimeout(run, 400);
 			} else {
 				$("#replay").show();
-				$("#turnLabel").hide();
+				$("#turnlabel").hide();
 			}
 		}
 		var idx = 0;
@@ -754,7 +748,8 @@ function Game($el, sessionId, con) {
 		running = false,
 		turnCount = -1,
 		currentTurn = -1,
-		testCtrl = new TestControl();
+		testCtrl = new TestControl(),
+		resultDialog = new ResultDialog($("#result-dialog"));
 	$el.append(bug.element());
 	$.extend(this, {
 		"field": field,
@@ -924,6 +919,7 @@ function Player(imageSrc, initialX, initialY, $point) {
 			initialY = ny;
 		} 
 		pos(initialX, initialY);
+		$div.show();
 	}
 	function nextCommand() {
 		return commands.shift();
@@ -1654,6 +1650,28 @@ function Animate($el) {
 		"show" : show,
 		"element": element,
 		"reset": reset
+	});
+}
+function ResultDialog($el) {
+	function show(name) {
+		$el.find("img").attr("src", "/assets/images/illust/" + name + ".png");
+		setTimeout(function() {
+			$el.modal({
+				"show": true
+			});
+		}, 800);
+	}
+	function win(name) {
+		$el.find(".modal-title").text(MSG.format(MSG.win, name));
+		show("win-" + name.toLowerCase());
+	}
+	function draw() {
+		$el.find(".modal-title").text(MSG.draw);
+		show("draw");
+	}
+	$.extend(this, {
+		"win": win,
+		"draw": draw
 	});
 }
 })(jQuery);

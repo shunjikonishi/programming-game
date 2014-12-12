@@ -208,17 +208,11 @@ function Game($el, sessionId, con) {
 			}
 		}
 		function gameover(winner) {
-			showMessage({
-				"message": MSG.format(MSG.win, winner),
-				"duration": "4s"
-			}, winner.toLowerCase());
+			resultDialog.win(winner);
 			gameEnd();
 		}
 		function draw() {
-			showMessage({
-				"message": MSG.draw,
-				"duration": "4s"
-			});
+			resultDialog.draw();
 			gameEnd();
 		}
 		function showConflict(pos) {
@@ -429,7 +423,7 @@ function Game($el, sessionId, con) {
 				setTimeout(run, 400);
 			} else {
 				$("#replay").show();
-				$("#turnLabel").hide();
+				$("#turnlabel").hide();
 			}
 		}
 		var idx = 0;
@@ -449,7 +443,8 @@ function Game($el, sessionId, con) {
 		running = false,
 		turnCount = -1,
 		currentTurn = -1,
-		testCtrl = new TestControl();
+		testCtrl = new TestControl(),
+		resultDialog = new ResultDialog($("#result-dialog"));
 	$el.append(bug.element());
 	$.extend(this, {
 		"field": field,
