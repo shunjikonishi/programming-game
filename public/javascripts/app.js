@@ -590,9 +590,11 @@ function Game($el, sessionId, con) {
 		}
 	}
 	function drop(player, callback) {
-		var animate = new Animate(player.element());
+		var animate = new Animate(player.element()),
+			pos = player.pos(),
+			name = pos.x <= 0 || pos.y <= 0 ? "drop_left" : "drop_right";
 		animate.show({
-			"name": "drop",
+			"name": name,
 			"duration": "2s"
 		});
 		setTimeout(function() {
@@ -956,6 +958,12 @@ function Player(imageSrc, initialX, initialY, $point) {
 	}
 	function entry(v) {
 		sessionId = v;
+		if (v) {
+			new Animate($("#" + name() + "-entry-icon")).show({
+				"name": "entry",
+				"duration": "1s"
+			});
+		}
 	}
 	function isEntried() {
 		return !!sessionId;
@@ -1642,6 +1650,7 @@ function Animate($el) {
 		}
 		shown = true;
 		var params = {},
+			visible = $el.is(":visible"),
 			msg = options.message;
 		for (var i=0; i<properties.length; i++) {
 			var name = properties[i],
@@ -1662,7 +1671,9 @@ function Animate($el) {
 		$el.css(params);
 		$el.show();
 		setTimeout(function() {
-			$el.hide();
+			if (!visible) {
+				$el.hide();
+			}
 			$el.css("animation-name", "");
 			$el.css("-webkit-animation-name", "");
 			if (initialText) {

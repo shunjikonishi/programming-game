@@ -38,6 +38,7 @@ function Animate($el) {
 		}
 		shown = true;
 		var params = {},
+			visible = $el.is(":visible"),
 			msg = options.message;
 		for (var i=0; i<properties.length; i++) {
 			var name = properties[i],
@@ -58,7 +59,9 @@ function Animate($el) {
 		$el.css(params);
 		$el.show();
 		setTimeout(function() {
-			$el.hide();
+			if (!visible) {
+				$el.hide();
+			}
 			$el.css("animation-name", "");
 			$el.css("-webkit-animation-name", "");
 			if (initialText) {

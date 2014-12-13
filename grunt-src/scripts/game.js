@@ -304,9 +304,11 @@ function Game($el, sessionId, con) {
 		}
 	}
 	function drop(player, callback) {
-		var animate = new Animate(player.element());
+		var animate = new Animate(player.element()),
+			pos = player.pos(),
+			name = pos.x <= 0 || pos.y <= 0 ? "drop_left" : "drop_right";
 		animate.show({
-			"name": "drop",
+			"name": name,
 			"duration": "2s"
 		});
 		setTimeout(function() {

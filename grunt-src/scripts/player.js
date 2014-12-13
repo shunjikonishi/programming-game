@@ -86,6 +86,12 @@ function Player(imageSrc, initialX, initialY, $point) {
 	}
 	function entry(v) {
 		sessionId = v;
+		if (v) {
+			new Animate($("#" + name() + "-entry-icon")).show({
+				"name": "entry",
+				"duration": "1s"
+			});
+		}
 	}
 	function isEntried() {
 		return !!sessionId;
