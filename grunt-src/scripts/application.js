@@ -29,7 +29,8 @@ pg.Application = function(gameId, sessionId) {
 				"command": "codingStart",
 				"data": {
 					"codingTime": setting.codingTime(),
-					"gameTime": setting.gameTime()
+					"gameTime": setting.gameTime(),
+					"turnTime": setting.turnTime()
 				}
 			});
 		});
@@ -48,6 +49,8 @@ pg.Application = function(gameId, sessionId) {
 		});
 		con.on("playerStatus", updatePlayerStatus);
 		con.on("codingStart", codingStart);
+		con.on("executeStart", executeStart);
+		con.on("commandRequest", commandRequest);
 		con.on("turnAction", game.turnAction);
 		con.on("gameEnd", function(data) {
 			salesforceCtrl.gameEnd();
@@ -55,6 +58,7 @@ pg.Application = function(gameId, sessionId) {
 			game.getSalesforce().entry(null);
 			game.getHeroku().entry(null);
 			replays = data;
+			observers = [];
 			updateButtons();
 		});
 		con.request({
@@ -109,6 +113,7 @@ pg.Application = function(gameId, sessionId) {
 			"data": json
 		});
 		replays = [];
+		observers = [];
 		updateButtons();
 	}
 	function updateStatus(status, replayData) {
@@ -172,7 +177,9 @@ pg.Application = function(gameId, sessionId) {
 		$(".header-label").hide();
 		updateEntryButton($salesforceEntry, s);
 		updateEntryButton($herokuEntry, h);
-		resetEditors();
+		if (replays.length === 0) {
+			resetEditors();
+		}
 	}
 	function codingStart(setting) {
 		$(".btn-test").prop("disabled", false);
@@ -185,52 +192,24 @@ pg.Application = function(gameId, sessionId) {
 		game.showMessage(MSG.codingStart);
 		salesforceCtrl.codingStart();
 		herokuCtrl.codingStart();
-		stopWatch.start(setting.codingTime, function() {
-			executeStart(setting.gameTime);
-		});
+		stopWatch.start(setting.codingTime);
+		observers = [];
 	}
-	function executeStart(gameTime) {
+	function executeStart(data) {
 		$(".btn-test").prop("disabled", true);
 		game.showMessage(MSG.gameStart);
-		game.start(gameTime);
+		game.start(data.gameTime);
 		if (game.getSalesforce().getSessionId() === sessionId) {
-			observe("salesforce", game.getSalesforce(), salesforceCtrl.getEditor());
+			observers.push(new Observer("salesforce", con, game, game.getSalesforce(), salesforceCtrl.getEditor()));
 		}
 		if (game.getHeroku().getSessionId() === sessionId) {
-			observe("heroku", game.getHeroku(), herokuCtrl.getEditor());
+			observers.push(new Observer("heroku", con, game, game.getHeroku(), herokuCtrl.getEditor()));
 		}
 	}
-	function observe(name, player, editor) {
-		function doObserve() {
-			if (!game.isRunning()) {
-				return;
-			}
-			if (player.commandCount() === 0) {
-				var text = editor.consumeLine();
-				if (text) {
-					interpreter.run(text);
-				}
-			}
-			var cmd = player.commandCount() > 0 ? player.nextCommand() : {
-				"command": "wait"
-			};
-			con.request({
-				"command": "playerAction",
-				"data": {
-					"player": name,
-					"action": cmd
-				}
-			});
-			setTimeout(doObserve, 700);
-		}
-		var context = {
-			"p": player,
-			"onError": function(msg) {
-				console.log(msg);
-				player.wait();
-			}
-		}, interpreter = new Interpreter(context, new Parser());
-		setTimeout(doObserve, 3000);
+	function commandRequest() {
+		$.each(observers, function(idx, observer) {
+			observer.run();
+		});
 	}
 	function random(n) {
 		return Math.floor(Math.random() * n);
@@ -272,13 +251,17 @@ pg.Application = function(gameId, sessionId) {
 			}
 		});
 	}
-	var con = new room.Connection(location.protocol.replace("http", "ws") + "//" + location.host + "/ws/" + gameId),
+	var con = new room.Connection({
+			"url": location.protocol.replace("http", "ws") + "//" + location.host + "/ws/" + gameId,
+			"logger": console
+		}),
 		game = new Game($("#game"), sessionId, con),
 		salesforceCtrl = new SalesforceCtrl(game, con),
 		herokuCtrl = new HerokuCtrl(game, con),
 		stopWatch = new StopWatch($("#stopwatch")),
 		watch = false,
 		replays = [],
+		observers = [],
 		$gameGen = $("#game-gen"),
 		$replay = $("#replay"),
 		$salesforceEntry = $("#salesforce-entry"),

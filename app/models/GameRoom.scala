@@ -63,6 +63,17 @@ class GameRoom(name: String) extends DefaultRoom(name) {
       broadcast(new CommandResponse("codingStart", data).toString)
       Akka.system.scheduler.scheduleOnce(codingTime seconds) {
         broadcast(new CommandResponse("executeStart", data).toString)
+        commandRequest(3000, gameTime, turnTime)
+      }
+    }
+  }
+
+  def commandRequest(next: Int, rest: Int, turnTime: Int): Unit = {
+println(s"commandRequest $next, $rest")
+    Akka.system.scheduler.scheduleOnce(next milliseconds) {
+      broadcast(new CommandResponse("commandRequest", JsNull).toString)
+      if (rest > 0) {
+        commandRequest(turnTime, rest - 1, turnTime)
       }
     }
   }

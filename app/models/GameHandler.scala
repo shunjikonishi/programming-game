@@ -7,6 +7,9 @@ import roomframework.command.CommandFilter
 
 class GameHandler(room: GameRoom, sessionId: String) extends RoomHandler(room) with CommandFilter {
   private def init = {
+    addHandler("noop") { command =>
+      CommandResponse.None
+    }
     addHandler("initGame") { command =>
       val sessionId = (command.data \ "sessionId").as[String]
       val status = GameStatus.fromJson(command.data \ "status")
@@ -63,9 +66,16 @@ class GameHandler(room: GameRoom, sessionId: String) extends RoomHandler(room) w
         id == sessionId
       }).getOrElse(false)
     }
+    def filterEntried: Boolean = {
+      room.status.filter(_.isEntried(sessionId)).isDefined
+    }
+println(s"filter1 $msg.name")
     if (msg.name == "initGame" && (msg.data \ "sessionId").as[String] == sessionId) {
       None
     } else if (msg.name == "change" && filterChange(msg)) {
+      None
+    } else if (msg.name == "commandRequest" && !filterEntried) {
+println(s"filter2 $filterEntried")
       None
     } else {
       Some(msg)

@@ -62,6 +62,7 @@ pg.Application = function(gameId, sessionId) {
 		con.on("playerStatus", updatePlayerStatus);
 		con.on("codingStart", codingStart);
 		con.on("executeStart", executeStart);
+		con.on("commandRequest", commandRequest);
 		con.on("turnAction", game.turnAction);
 		con.on("gameEnd", function(data) {
 			salesforceCtrl.gameEnd();
@@ -69,6 +70,7 @@ pg.Application = function(gameId, sessionId) {
 			game.getSalesforce().entry(null);
 			game.getHeroku().entry(null);
 			replays = data;
+			observers = [];
 			updateButtons();
 		});
 		con.request({
@@ -123,6 +125,7 @@ pg.Application = function(gameId, sessionId) {
 			"data": json
 		});
 		replays = [];
+		observers = [];
 		updateButtons();
 	}
 	function updateStatus(status, replayData) {
@@ -186,12 +189,14 @@ pg.Application = function(gameId, sessionId) {
 		$(".header-label").hide();
 		updateEntryButton($salesforceEntry, s);
 		updateEntryButton($herokuEntry, h);
-		resetEditors();
+		if (replays.length === 0) {
+			resetEditors();
+		}
 	}
 	function codingStart(setting) {
 		$(".btn-test").prop("disabled", false);
 		$gameStart.hide();
-		if (stopWatch.isRunning() || game.isRunning()) {
+		if (stopWatch.isRunning()) {
 			return;
 		}
 		$salesforceEntry.prop("disabled", true);
@@ -200,49 +205,23 @@ pg.Application = function(gameId, sessionId) {
 		salesforceCtrl.codingStart();
 		herokuCtrl.codingStart();
 		stopWatch.start(setting.codingTime);
+		observers = [];
 	}
 	function executeStart(data) {
 		$(".btn-test").prop("disabled", true);
 		game.showMessage(MSG.gameStart);
 		game.start(data.gameTime);
 		if (game.getSalesforce().getSessionId() === sessionId) {
-			observe("salesforce", game.getSalesforce(), salesforceCtrl.getEditor());
+			observers.push(new Observer("salesforce", con, game, game.getSalesforce(), salesforceCtrl.getEditor()));
 		}
 		if (game.getHeroku().getSessionId() === sessionId) {
-			observe("heroku", game.getHeroku(), herokuCtrl.getEditor());
+			observers.push(new Observer("heroku", con, game, game.getHeroku(), herokuCtrl.getEditor()));
 		}
 	}
-	function observe(name, player, editor) {
-		function doObserve() {
-			if (!game.isRunning()) {
-				return;
-			}
-			if (player.commandCount() === 0) {
-				var text = editor.consumeLine();
-				if (text) {
-					interpreter.run(text);
-				}
-			}
-			var cmd = player.commandCount() > 0 ? player.nextCommand() : {
-				"command": "wait"
-			};
-			con.request({
-				"command": "playerAction",
-				"data": {
-					"player": name,
-					"action": cmd
-				}
-			});
-			setTimeout(doObserve, 700);
-		}
-		var context = {
-			"p": player,
-			"onError": function(msg) {
-				console.log(msg);
-				player.wait();
-			}
-		}, interpreter = new Interpreter(context, new Parser());
-		setTimeout(doObserve, 3000);
+	function commandRequest() {
+		$.each(observers, function(idx, observer) {
+			observer.run();
+		});
 	}
 	function random(n) {
 		return Math.floor(Math.random() * n);
@@ -284,13 +263,17 @@ pg.Application = function(gameId, sessionId) {
 			}
 		});
 	}
-	var con = new room.Connection(location.protocol.replace("http", "ws") + "//" + location.host + "/ws/" + gameId),
+	var con = new room.Connection({
+			"url": location.protocol.replace("http", "ws") + "//" + location.host + "/ws/" + gameId,
+			"logger": console
+		}),
 		game = new Game($("#game"), sessionId, con),
 		salesforceCtrl = new SalesforceCtrl(game, con),
 		herokuCtrl = new HerokuCtrl(game, con),
 		stopWatch = new StopWatch($("#stopwatch")),
 		watch = false,
 		replays = [],
+		observers = [],
 		$gameGen = $("#game-gen"),
 		$replay = $("#replay"),
 		$salesforceEntry = $("#salesforce-entry"),
@@ -1166,6 +1149,7 @@ function HerokuCtrl(game, con) {
 		var b = game.getSessionId() === game.getHeroku().getSessionId();
 		editor.readOnly(!b);
 		editor.setChangeHandling(b);
+		editor.focus();
 	}
 	function gameEnd() {
 		editor.setChangeHandling(false);
@@ -1317,6 +1301,9 @@ function TextEditor(name, $textarea, con) {
 			"ch": change.to.ch
 		});
 	}
+	function focus() {
+		editor.focus();
+	}
 	var consumedLine = 0,
 		editor = CodeMirror.fromTextArea($textarea[0], {
 			"mode": "javascript",
@@ -1331,6 +1318,7 @@ function TextEditor(name, $textarea, con) {
 		"applyChange": applyChange,
 		"del": del,
 		"undo": undo,
+		"focus": focus,
 		"getCommands": getCommands,
 		"readOnly": readOnly,
 		"consumeLine": consumeLine
@@ -1671,6 +1659,39 @@ function ResultDialog($el) {
 	$.extend(this, {
 		"win": win,
 		"draw": draw
+	});
+}
+function Observer(name, con, game, player, editor) {
+	function run() {
+		if (!game.isRunning()) {
+			return;
+		}
+		if (player.commandCount() === 0) {
+			var text = editor.consumeLine();
+			if (text) {
+				interpreter.run(text);
+			}
+		}
+		var cmd = player.commandCount() > 0 ? player.nextCommand() : {
+			"command": "wait"
+		};
+		con.request({
+			"command": "playerAction",
+			"data": {
+				"player": name,
+				"action": cmd
+			}
+		});
+	}
+	var context = {
+		"p": player,
+		"onError": function(msg) {
+			console.log(msg);
+			player.wait();
+		}
+	}, interpreter = new Interpreter(context, new Parser());
+	$.extend(this, {
+		"run": run
 	});
 }
 })(jQuery);

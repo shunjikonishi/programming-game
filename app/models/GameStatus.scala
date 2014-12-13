@@ -16,6 +16,12 @@ case class GameStatus(
     copy(players = players + (player -> players(player).entry(sessionId)))
   }
 
+  def isEntried(sessionId: String): Boolean = {
+    players.filter{ case (name, p) => 
+      p.sessionId.filter(_ == sessionId).isDefined
+    }.size > 0
+  }
+
   def reset = {
     copy(players = players ++ Map(
       "salesforce" -> salesforce.reset,

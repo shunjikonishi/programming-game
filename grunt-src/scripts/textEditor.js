@@ -137,6 +137,9 @@ function TextEditor(name, $textarea, con) {
 			"ch": change.to.ch
 		});
 	}
+	function focus() {
+		editor.focus();
+	}
 	var consumedLine = 0,
 		editor = CodeMirror.fromTextArea($textarea[0], {
 			"mode": "javascript",
@@ -151,6 +154,7 @@ function TextEditor(name, $textarea, con) {
 		"applyChange": applyChange,
 		"del": del,
 		"undo": undo,
+		"focus": focus,
 		"getCommands": getCommands,
 		"readOnly": readOnly,
 		"consumeLine": consumeLine

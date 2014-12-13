@@ -12,6 +12,7 @@ function HerokuCtrl(game, con) {
 		var b = game.getSessionId() === game.getHeroku().getSessionId();
 		editor.readOnly(!b);
 		editor.setChangeHandling(b);
+		editor.focus();
 	}
 	function gameEnd() {
 		editor.setChangeHandling(false);

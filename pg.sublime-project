@@ -4,6 +4,9 @@
 		{
 			"follow_symlinks": true,
 			"path": ".",
+			"file_exclude_patterns" : [
+				"public/javascripts/app.js"
+			],
 			"folder_exclude_patterns" : [
 				"node_modules",
 				"bower_components",
