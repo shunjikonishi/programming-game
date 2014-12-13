@@ -8,6 +8,7 @@ pointCount=ポイントの数
 wallCount=壁の数
 codingTime=コーディング時間(秒)
 gameTime=ターン数
+turnTime=1ターンの時間(ms)
 reset=リセット
 entry=エントリーする！
 test=テスト

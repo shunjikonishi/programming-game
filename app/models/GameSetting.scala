@@ -8,7 +8,8 @@ case class GameSetting(
   pointCount: Int,
   wallCount: Int,
   codingTime: Int,
-  gameTime: Int
+  gameTime: Int,
+  turnTime: Int
 ) {
   def toJson = JsObject(Seq(
     "fieldWidth" -> JsNumber(fieldWidth),
@@ -16,7 +17,8 @@ case class GameSetting(
     "pointCount" -> JsNumber(pointCount),
     "wallCount" -> JsNumber(wallCount),
     "codingTime" -> JsNumber(codingTime),
-    "gameTime" -> JsNumber(gameTime)
+    "gameTime" -> JsNumber(gameTime),
+    "turnTime" -> JsNumber(turnTime)
   ))
 }
 
@@ -28,7 +30,8 @@ object GameSetting {
       pointCount = (json \ "pointCount").as[Int],
       wallCount = (json \ "wallCount").as[Int],
       codingTime = (json \ "codingTime").as[Int],
-      gameTime = (json \ "gameTime").as[Int]
+      gameTime = (json \ "gameTime").as[Int],
+      turnTime = (json \ "turnTime").as[Int]
     )
   }
 }

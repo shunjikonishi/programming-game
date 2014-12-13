@@ -18,7 +18,8 @@ function GameSetting() {
 			"pointCount",
 			"wallCount",
 			"codingTime",
-			"gameTime"
+			"gameTime",
+			"turnTime"
 		];
 	$.each(names, function(idx, name) {
 		self[name] = (function() {

@@ -1,14 +1,14 @@
 function StopWatch($el) {
-	function show() {
-		var min = Math.floor(second / 60),
-			sec = second % 60,
+	function show(rest) {
+		var min = Math.floor(rest / 60),
+			sec = rest % 60,
 			text = ("0" + min).slice(-2) + ":" + ("0" + sec).slice(-2);
 		$el.text(text);
 	}
 	function countDown() {
-		second--;
-		show();
-		if (second > 0) {
+		var rest = Math.floor((limit - new Date().getTime()) / 1000);
+		show(rest);
+		if (rest > 0) {
 			setTimeout(countDown, 1000);
 		} else {
 			running = false;
@@ -20,10 +20,10 @@ function StopWatch($el) {
 	}
 	function start(sec, func) {
 		running = true;
+		limit = new Date().getTime() + (sec * 1000);
 		$el.show();
-		second = sec;
 		callback = func;
-		show();
+		show(sec);
 		setTimeout(countDown, 1000);
 	}
 	function hide() {
@@ -32,7 +32,7 @@ function StopWatch($el) {
 	function isRunning() { 
 		return running;
 	}
-	var second = 0,
+	var limit = -1,
 		callback = null,
 		running = false;
 	$.extend(this, {

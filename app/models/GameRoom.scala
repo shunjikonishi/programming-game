@@ -1,5 +1,10 @@
 package models
 
+import play.api.libs.concurrent.Akka
+import play.api.Play.current
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import scala.concurrent.duration.DurationInt
+
 import scala.collection.mutable.ListBuffer
 import roomframework.command.CommandResponse
 import roomframework.room.DefaultRoom
@@ -43,8 +48,22 @@ class GameRoom(name: String) extends DefaultRoom(name) {
 
   def doCodingStart(data: JsValue) = {
     status_.filter(!_.running).foreach { s =>
-      status_ = Some(s.copy(running=true))
+      val codingTime = (data \ "codingTime").as[Int]
+      val gameTime = (data \ "gameTime").as[Int]
+      val turnTime = (data \ "turnTime").as[Int]
+
+      status_ = Some(s.copy(
+        setting = s.setting.copy(
+          codingTime = codingTime,
+          gameTime = gameTime,
+          turnTime = turnTime
+        ),
+        running = true
+      ))
       broadcast(new CommandResponse("codingStart", data).toString)
+      Akka.system.scheduler.scheduleOnce(codingTime seconds) {
+        broadcast(new CommandResponse("executeStart", data).toString)
+      }
     }
   }
   

@@ -129,9 +129,7 @@ pg.Application = function(gameId, sessionId) {
 		resetPlayer(game.getSalesforce(), status.salesforce);
 		resetPlayer(game.getHeroku(), status.heroku);
 		resetPlayer(game.getBug(), status.bug);
-		if (replayData && replayData.length > 0) {
-			replays = replayData;
-		}
+		replays = replayData || [];
 		updateButtons();
 	}
 	function updatePlayerStatus(ps) {

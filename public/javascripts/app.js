@@ -41,7 +41,8 @@ pg.Application = function(gameId, sessionId) {
 				"command": "codingStart",
 				"data": {
 					"codingTime": setting.codingTime(),
-					"gameTime": setting.gameTime()
+					"gameTime": setting.gameTime(),
+					"turnTime": setting.turnTime()
 				}
 			});
 		});
@@ -60,6 +61,7 @@ pg.Application = function(gameId, sessionId) {
 		});
 		con.on("playerStatus", updatePlayerStatus);
 		con.on("codingStart", codingStart);
+		con.on("executeStart", executeStart);
 		con.on("turnAction", game.turnAction);
 		con.on("gameEnd", function(data) {
 			salesforceCtrl.gameEnd();
@@ -141,9 +143,7 @@ pg.Application = function(gameId, sessionId) {
 		resetPlayer(game.getSalesforce(), status.salesforce);
 		resetPlayer(game.getHeroku(), status.heroku);
 		resetPlayer(game.getBug(), status.bug);
-		if (replayData && replayData.length > 0) {
-			replays = replayData;
-		}
+		replays = replayData || [];
 		updateButtons();
 	}
 	function updatePlayerStatus(ps) {
@@ -191,7 +191,7 @@ pg.Application = function(gameId, sessionId) {
 	function codingStart(setting) {
 		$(".btn-test").prop("disabled", false);
 		$gameStart.hide();
-		if (stopWatch.isRunning()) {
+		if (stopWatch.isRunning() || game.isRunning()) {
 			return;
 		}
 		$salesforceEntry.prop("disabled", true);
@@ -199,14 +199,12 @@ pg.Application = function(gameId, sessionId) {
 		game.showMessage(MSG.codingStart);
 		salesforceCtrl.codingStart();
 		herokuCtrl.codingStart();
-		stopWatch.start(setting.codingTime, function() {
-			executeStart(setting.gameTime);
-		});
+		stopWatch.start(setting.codingTime);
 	}
-	function executeStart(gameTime) {
+	function executeStart(data) {
 		$(".btn-test").prop("disabled", true);
 		game.showMessage(MSG.gameStart);
-		game.start(gameTime);
+		game.start(data.gameTime);
 		if (game.getSalesforce().getSessionId() === sessionId) {
 			observe("salesforce", game.getSalesforce(), salesforceCtrl.getEditor());
 		}
@@ -793,7 +791,8 @@ function GameSetting() {
 			"pointCount",
 			"wallCount",
 			"codingTime",
-			"gameTime"
+			"gameTime",
+			"turnTime"
 		];
 	$.each(names, function(idx, name) {
 		self[name] = (function() {
@@ -1510,16 +1509,16 @@ function Interpreter(context, parser) {
 	});
 }
 function StopWatch($el) {
-	function show() {
-		var min = Math.floor(second / 60),
-			sec = second % 60,
+	function show(rest) {
+		var min = Math.floor(rest / 60),
+			sec = rest % 60,
 			text = ("0" + min).slice(-2) + ":" + ("0" + sec).slice(-2);
 		$el.text(text);
 	}
 	function countDown() {
-		second--;
-		show();
-		if (second > 0) {
+		var rest = Math.floor((limit - new Date().getTime()) / 1000);
+		show(rest);
+		if (rest > 0) {
 			setTimeout(countDown, 1000);
 		} else {
 			running = false;
@@ -1531,10 +1530,10 @@ function StopWatch($el) {
 	}
 	function start(sec, func) {
 		running = true;
+		limit = new Date().getTime() + (sec * 1000);
 		$el.show();
-		second = sec;
 		callback = func;
-		show();
+		show(sec);
 		setTimeout(countDown, 1000);
 	}
 	function hide() {
@@ -1543,7 +1542,7 @@ function StopWatch($el) {
 	function isRunning() { 
 		return running;
 	}
-	var second = 0,
+	var limit = -1,
 		callback = null,
 		running = false;
 	$.extend(this, {
