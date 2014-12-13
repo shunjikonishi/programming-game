@@ -134,6 +134,10 @@
 	background-color: #d3d3d3;
 }
 
+.editor-error {
+	background-color: #F2DEDE;
+}
+
 .salesforce-buttons {
 	list-style: none;
 	margin-top: 10px;

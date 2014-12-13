@@ -33,7 +33,7 @@ function Parser() {
 		}
 	}
 	function parse(str) {
-		var pos = skipWhitespace(str, pos),
+		var pos = skipWhitespace(str, 0),
 			state = STATE_OBJECT,
 			obj = null,
 			method = null,

@@ -2,7 +2,7 @@ function TextEditor(name, $textarea, con) {
 	function autocomplete(cm) {
 		var obj = cm.getTokenAt(cm.getCursor()).string;
 		cm.replaceSelection(".");
-		if (obj === "p") {
+		if (obj && obj.trim() === "p") {
 			CodeMirror.showHint(cm, function() {
 				return {
 					"list": [
@@ -17,7 +17,6 @@ function TextEditor(name, $textarea, con) {
 			}, {
 				"closeCharacters": /.*/
 			});
-		} else {
 		}
 	}
 	function createEditor() {
@@ -35,7 +34,6 @@ function TextEditor(name, $textarea, con) {
 				}
 			});
 		}
-console.log("options", options);
 		return CodeMirror.fromTextArea($textarea[0], options);
 	}
 	function setReadOnly(line) {
@@ -136,18 +134,51 @@ console.log("options", options);
 		editor.undo();
 	}
 	function onChange(instance, change) {
-		var data = {
-			"name": name,
-			"from": {
-				"line": change.from.line,
-				"ch": change.from.ch
-			},
-			"to": {
-				"line": change.to.line,
-				"ch": change.to.ch
-			},
-			"text": change.text
-		};
+		function isError(cmd) {
+			if (cmd.error) {
+				return true;
+			}
+			if (cmd.object !== "p") {
+				return true;
+			}
+			var m = cmd.method;
+			if (m !== "up" && m !== "down" && m !== "right" && m !== "left") {
+				return true;
+			}
+			for (var i=0; i<cmd.args.length; i++) {
+				if (!(/^\d+$/.test(cmd.args[i]))) {
+					return true;
+				}
+			}
+			return false;
+		}
+		var currentLine = instance.getCursor().line, 
+			data = {
+				"name": name,
+				"from": {
+					"line": change.from.line,
+					"ch": change.from.ch
+				},
+				"to": {
+					"line": change.to.line,
+					"ch": change.to.ch
+				},
+				"text": change.text
+			};
+		for (var i=change.from.line; i<=change.to.line; i++) {
+			var hasError = false;
+			if (i !== currentLine) {
+				var text = instance.getLine(i);
+				if (text && text.trim().length > 0) {
+					hasError = isError(parser.parse(text));
+				}
+				if (hasError) {
+					editor.addLineClass(i, "background", "editor-error");
+				} else {
+					editor.removeLineClass(i, "background", "editor-error");
+				}
+			}
+		}
 		con.request({
 			"command": "change",
 			"data": data
@@ -177,7 +208,8 @@ console.log("options", options);
 		editor.focus();
 	}
 	var consumedLine = 0,
-		editor = createEditor();
+		editor = createEditor(),
+		parser = new Parser();
 	$.extend(this, {
 		"reset": reset,
 		"setCommand": setCommand,
