@@ -1163,6 +1163,45 @@ function HerokuCtrl(game, con) {
 	});
 }
 function TextEditor(name, $textarea, con) {
+	function autocomplete(cm) {
+		var obj = cm.getTokenAt(cm.getCursor()).string;
+		cm.replaceSelection(".");
+		if (obj === "p") {
+			CodeMirror.showHint(cm, function() {
+				return {
+					"list": [
+						"up()",
+						"right()",
+						"down()",
+						"left()"
+					],
+					"from": cm.getCursor(),
+					"to": cm.getCursor()
+				};
+			}, {
+				"closeCharacters": /.*/
+			});
+		} else {
+		}
+	}
+	function createEditor() {
+		var options = {
+			"mode": "javascript",
+			"lineNumbers": true,
+			"firstLineNumber": 0,
+			"readOnly": true,
+			"styleActiveLine": true
+		};
+		if (name === "heroku") {
+			$.extend(options, {
+				"extraKeys": {
+					".": autocomplete
+				}
+			});
+		}
+console.log("options", options);
+		return CodeMirror.fromTextArea($textarea[0], options);
+	}
 	function setReadOnly(line) {
 		editor.markText({
 			"line": line,
@@ -1192,13 +1231,10 @@ function TextEditor(name, $textarea, con) {
 	function consumeLine() {
 		var line = consumedLine + 1,
 			lineCount = editor.lineCount();
-		while (line < lineCount) {
+		if (line < lineCount) {
 			var text = editor.getLine(line);
 			setReadOnly(line);
-			if (text) {
-				return text;
-			}
-			line++;
+			return text || "";
 		}
 		return null;
 	}
@@ -1305,12 +1341,7 @@ function TextEditor(name, $textarea, con) {
 		editor.focus();
 	}
 	var consumedLine = 0,
-		editor = CodeMirror.fromTextArea($textarea[0], {
-			"mode": "javascript",
-			"lineNumbers": true,
-			"readOnly": true,
-			"styleActiveLine": true
-		});
+		editor = createEditor();
 	$.extend(this, {
 		"reset": reset,
 		"setCommand": setCommand,
@@ -1359,7 +1390,7 @@ function Parser() {
 		}
 	}
 	function parse(str) {
-		var pos = 0,
+		var pos = skipWhitespace(str, pos),
 			state = STATE_OBJECT,
 			obj = null,
 			method = null,

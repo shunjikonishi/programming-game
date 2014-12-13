@@ -66,6 +66,10 @@
 	margin: 5px;
 }
 
+.btn.heroku:disabled, .btn.salesforce:disabled {
+	backgounrd: #D6D6D6;
+}
+
 .player {
 	position: absolute;
 	height: 50px;
@@ -123,6 +127,7 @@
 .CodeMirror {
 	width: 220px;
 	border: solid 1px #000;
+	font-family: Monaco, 'Andale Mono', 'Lucida Console', 'Bitstream Vera Sans Mono', 'Courier New', Courier, monospace;
 }
 
 .editor-readonly {

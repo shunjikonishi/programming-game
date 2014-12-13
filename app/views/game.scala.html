@@ -2,16 +2,18 @@
 
 @main {
 <link rel="stylesheet" href="/assets/javascripts/codemirror/lib/codemirror.css">
+<link rel="stylesheet" href="/assets/javascripts/codemirror/addon/hint/show-hint.css">
 <script src="/assets/javascripts/codemirror/lib/codemirror.js"></script>
 <script src="/assets/javascripts/codemirror/mode/javascript/javascript.js"></script>
 <script src="/assets/javascripts/codemirror/addon/selection/active-line.js"></script>
+<script src="/assets/javascripts/codemirror/addon/hint/show-hint.js"></script>
 <script src="/assets/javascripts/roomframework/roomframework.js"></script>
 
 <h1>@Messages("title")</h1>
 <div id="game-setting">
 	<div>
 		<span class="game-setting-title">@Messages("gameSetting")</span>
-		<button id="game-gen" class="btn btn-sm" disabled>@Messages("reset")</button>
+		<button id="game-gen" class="btn btn-info btn-sm" disabled>@Messages("reset")</button>
 		<button id="toggle-setting" class="btn btn-sm">
 			<span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
 		</button>
