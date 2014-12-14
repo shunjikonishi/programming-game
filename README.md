@@ -1,5 +1,6 @@
 # Salesforce vs. Heroku
 
+http://salesforce-vs.herokuapp.com/
 
 SalesforceとHerokuの違いを説明するゲームです。
 ポイント＆クリック(Salesforce)とコーディング(Heroku)でキャラクタを操作して勝敗を競います。
@@ -83,8 +84,3 @@ Salesforce側は矢印ボタンとUndo、DELボタンで操作します。(INS�
 - 無駄にポップアップ通知があったり
 - リロードしてもチャットログは残る(sessionStorage利用)
 
-## ToDo
-- チャットが欲しい
-- READMEの整理
-- app.json
-- Heroku Button
