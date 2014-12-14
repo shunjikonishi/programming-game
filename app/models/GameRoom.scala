@@ -63,7 +63,7 @@ class GameRoom(name: String) extends DefaultRoom(name) {
       broadcast(new CommandResponse("codingStart", data).toString)
       Akka.system.scheduler.scheduleOnce(codingTime seconds) {
         broadcast(new CommandResponse("executeStart", data).toString)
-        commandRequest(3000, gameTime, turnTime)
+        commandRequest(3000, gameTime, turnTime - 1)
       }
     }
   }
