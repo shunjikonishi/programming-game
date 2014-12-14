@@ -1,5 +1,8 @@
 pg.Application = function(gameId, sessionId) {
 	function init() {
+		function doInitGame() {
+			initGame(false);
+		}
 		initConnection(con);
 		$("#toggle-setting").click(function() {
 			$("#game-setting-table").toggle();
@@ -7,12 +10,12 @@ pg.Application = function(gameId, sessionId) {
 		$("#bug-test").click(function() {
 			game.bugTest(new GameSetting().gameTime());
 		});
-		$gameGen.click(function() {
-			initGame(false);
-		});
+		$gameGen.click(doInitGame);
+		$("#play-again").click(doInitGame);
+
 		$replay.click(function() {
 			if (replays && replays.length > 0) {
-				$replay.hide();
+				$replayHolder.hide();
 				game.replay(replays);
 			}
 		});
@@ -83,10 +86,13 @@ pg.Application = function(gameId, sessionId) {
 		});
 	}
 	function initGame(load) {
+console.log("initGame1", load);
 		var setting = new GameSetting();
 		if (load) {
+console.log("initGame2", load);
 			setting.load();
 		}
+console.log("initGame3", setting.toJson());
 		game.reset(setting.fieldWidth(), setting.fieldHeight());
 		generateObject(setting.wallCount(), false);
 		generateObject(setting.wallCount(), true);
@@ -186,7 +192,7 @@ pg.Application = function(gameId, sessionId) {
 		$("#game-setting-table").find(":input").prop("disabled", !(entried || noEntry));
 		$gameStart.toggle(!hasReplay);
 		$gameStart.prop("disabled", !entried);
-		$replay.toggle(hasReplay);
+		$replayHolder.toggle(hasReplay);
 		$(".header-label").hide();
 		updateEntryButton($salesforceEntry, s);
 		updateEntryButton($herokuEntry, h);
@@ -282,6 +288,7 @@ pg.Application = function(gameId, sessionId) {
 		resultDialog = new ResultDialog($("#result-dialog")),
 		$gameGen = $("#game-gen"),
 		$replay = $("#replay"),
+		$replayHolder = $("#replay-holder"),
 		$salesforceEntry = $("#salesforce-entry"),
 		$herokuEntry = $("#heroku-entry"),
 		$gameStart = $("#game-start");

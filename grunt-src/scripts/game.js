@@ -425,7 +425,7 @@ function Game($el, sessionId, con) {
 			if (idx < commands.length) {
 				setTimeout(run, 400);
 			} else {
-				$("#replay").show();
+				$("#replay-holder").show();
 				$("#turnlabel").hide();
 			}
 		}

@@ -15,6 +15,7 @@ test=テスト
 bugTest=Bugのテスト
 start=ゲームスタート
 replay=リプレイ
+playAgain=もう一回
 alreadyEntried=既に他のユーザがエントリーしています。
 
 ui.pathError=任意のパスを入力してください

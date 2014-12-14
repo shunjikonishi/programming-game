@@ -180,8 +180,16 @@
 	width: 200px;
 }
 
-#game-start, #replay {
+#game-start {
 	width: 200px;
+}
+
+#replay-holder {
+	width: 200px;
+}
+
+#replay, #play-again {
+	width: 90px;
 }
 
 .header-label {
