@@ -61,9 +61,10 @@ pg.Application = function(gameId, sessionId) {
 			if (!watch) {
 				return;
 			}
-			game.turnAction(data);
+			execQueue.push(data);
 		});
 		con.on("gameEnd", function(data) {
+			game.end();
 			salesforceCtrl.gameEnd();
 			herokuCtrl.gameEnd();
 			game.getSalesforce().entry(null);
@@ -200,6 +201,7 @@ pg.Application = function(gameId, sessionId) {
 		if (replays.length === 0) {
 			resetEditors();
 		}
+		execQueue = [];
 	}
 	function codingStart(setting) {
 		watch = true;
@@ -217,6 +219,17 @@ pg.Application = function(gameId, sessionId) {
 		observers = [];
 	}
 	function executeStart(data) {
+		function processExecQueue() {
+			if (!game.isRunning()) {
+				return;
+			}
+			if (execQueue.length > 0) {
+				game.turnAction(execQueue.shift());
+			}
+			setTimeout(processExecQueue, turnTime);
+		}
+		var turnTime = data.turnTime;
+		execQueue = [];
 		watch = true;
 		$(".btn-test").prop("disabled", true);
 		game.showMessage(MSG.gameStart);
@@ -227,6 +240,7 @@ pg.Application = function(gameId, sessionId) {
 		if (game.getHeroku().getSessionId() === sessionId) {
 			observers.push(new Observer("heroku", con, game, game.getHeroku(), herokuCtrl.getEditor()));
 		}
+		setTimeout(processExecQueue, turnTime);
 	}
 	function commandRequest() {
 		$.each(observers, function(idx, observer) {
@@ -283,6 +297,7 @@ pg.Application = function(gameId, sessionId) {
 		watch = false,
 		replays = [],
 		observers = [],
+		execQueue = [],
 		resultDialog = new ResultDialog($("#result-dialog")),
 		$gameGen = $("#game-gen"),
 		$replay = $("#replay"),

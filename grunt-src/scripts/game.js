@@ -401,6 +401,9 @@ function Game($el, sessionId, con) {
 		running = true;
 		showTurnLabel();
 	}
+	function end() {
+		running = false;
+	}
 	function isRunning() {
 		return running;
 	}
@@ -465,7 +468,8 @@ function Game($el, sessionId, con) {
 		"start": start,
 		"isRunning": isRunning,
 		"turnAction": turnAction,
-		"replay": replay
+		"replay": replay,
+		"end": end
 	});
 }
 
