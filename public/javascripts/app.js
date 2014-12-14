@@ -20,7 +20,7 @@ pg.Application = function(gameId, sessionId) {
 			game.bugTest(new GameSetting().gameTime());
 		});
 		$gameGen.click(function() {
-			initGame();
+			initGame(false);
 		});
 		$replay.click(function() {
 			if (replays && replays.length > 0) {
@@ -88,14 +88,17 @@ pg.Application = function(gameId, sessionId) {
 				if (data.status) {
 					updateStatus(data.status, data.replayData);
 				} else {
-					initGame();
+					initGame(true);
 					updateButtons();
 				}
 			}
 		});
 	}
-	function initGame() {
+	function initGame(load) {
 		var setting = new GameSetting();
+		if (load) {
+			setting.load();
+		}
 		game.reset(setting.fieldWidth(), setting.fieldHeight());
 		generateObject(setting.wallCount(), false);
 		generateObject(setting.wallCount(), true);
@@ -136,6 +139,7 @@ pg.Application = function(gameId, sessionId) {
 		replays = [];
 		observers = [];
 		updateButtons();
+		setting.save();
 	}
 	function updateStatus(status, replayData) {
 		function resetPlayer(cp, sp) {
@@ -178,7 +182,7 @@ pg.Application = function(gameId, sessionId) {
 		function updateEntryButton($btn, player) {
 			$btn.prop("disabled", hasReplay || player.isEntried());
 			if (player.getSessionId() === sessionId) {
-				$btn.text(MSG.yourEntry);
+				$btn.html(MSG.yourEntry + " <span class='label label-warning'>You</span>");
 			} else if (player.isEntried()) {
 				$btn.text(MSG.entried);
 			} else {
@@ -783,6 +787,19 @@ function GameSetting() {
 		});
 		return ret;
 	}
+	function save() {
+		if (localStorage) {
+			localStorage.setItem("game-setting", JSON.stringify(toJson()));
+		}
+	}
+	function load() {
+		if (localStorage) {
+			var str = localStorage.getItem("game-setting");
+			if (str) {
+				update(JSON.parse(str));
+			}
+		}
+	}
 	var self = this,
 		names = [
 			"fieldWidth",
@@ -807,7 +824,9 @@ function GameSetting() {
 	});
 	$.extend(this, {
 		"update": update,
-		"toJson": toJson
+		"toJson": toJson,
+		"save": save,
+		"load": load
 	});
 }
 function Field($el, x, y) {

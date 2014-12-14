@@ -137,7 +137,7 @@
 .CodeMirror {
 	width: 220px;
 	border: solid 1px #000;
-	font-family: Monaco, 'Andale Mono', 'Lucida Console', 'Bitstream Vera Sans Mono', 'Courier New', Courier, monospace;
+	font-size: 13px;
 }
 
 .editor-readonly {
