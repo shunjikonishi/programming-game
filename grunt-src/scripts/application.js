@@ -73,6 +73,7 @@ pg.Application = function(gameId, sessionId) {
 			updateButtons();
 			resultDialog.show(data);
 		});
+		con.on("chat", chat.chatMessage);
 		con.request({
 			"command": "status",
 			"success": function(data) {
@@ -86,13 +87,10 @@ pg.Application = function(gameId, sessionId) {
 		});
 	}
 	function initGame(load) {
-console.log("initGame1", load);
 		var setting = new GameSetting();
 		if (load) {
-console.log("initGame2", load);
 			setting.load();
 		}
-console.log("initGame3", setting.toJson());
 		game.reset(setting.fieldWidth(), setting.fieldHeight());
 		generateObject(setting.wallCount(), false);
 		generateObject(setting.wallCount(), true);
@@ -291,7 +289,8 @@ console.log("initGame3", setting.toJson());
 		$replayHolder = $("#replay-holder"),
 		$salesforceEntry = $("#salesforce-entry"),
 		$herokuEntry = $("#heroku-entry"),
-		$gameStart = $("#game-start");
+		$gameStart = $("#game-start"),
+		chat = new Chat($("#chat"), con);
 
 	init();
 };

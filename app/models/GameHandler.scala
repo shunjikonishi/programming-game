@@ -52,6 +52,10 @@ class GameHandler(room: GameRoom, sessionId: String) extends RoomHandler(room) w
       room.sendAction(player, action)
       CommandResponse.None
     }
+    addHandler("chat") { command =>
+      broadcast(command.json(command.data))
+      CommandResponse.None
+    }
     addBroadcastFilter(this)
   }
 

@@ -17,6 +17,8 @@ start=ゲームスタート
 replay=リプレイ
 playAgain=もう一回
 alreadyEntried=既に他のユーザがエントリーしています。
+nickname=ニックネーム
+chat=チャット
 
 ui.pathError=任意のパスを入力してください
 ui.tooManyPlayers=プレイヤーは二人までです。
@@ -29,4 +31,4 @@ ui.win={0}の勝利！！！
 ui.draw=引き分け！！！
 ui.result_detail={0}勝 {1}敗 {2}引き分け
 ui.result_detail2=Salesforce {0}勝 Heroku {1}勝 {2}引き分け
-
+ui.noname=名無し

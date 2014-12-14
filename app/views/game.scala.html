@@ -105,6 +105,22 @@
 		<img src="/assets/images/conflict.png" id="conflict" style="display:none;"/>
 	</div>
 	<button id="bug-test" class="btn btn-success btn-test">@Messages("bugTest")</button>
+	<div class="clearfix"></div>
+	<div id="chat" >
+		<h3>@Messages("chat")</h3>
+		<div>
+			<label>@Messages("nickname") <input type="text" class="chat-nickname" size="10" max-length="10"></label>
+			<input type="text" class="chat-msg" size="60">
+		</div>
+		<div>
+			<ul class="chat-log">
+			</ul>
+		</div>
+		<div class="chat-popup" style="display:none;">
+			<label></label>
+			<span></span>
+		</div>
+	</div>
 </div>
 <div id="message-dialog" class="animateDialog-default" style="display:none;">
 	<img src="/assets/images/salesforce.png" class="salesforce" style="display:none;"/>

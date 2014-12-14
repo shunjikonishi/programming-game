@@ -248,6 +248,37 @@ img.salesforce, img.heroku {
 	margin-top: -384px;
 	text-align: center;
 }
+
+#chat {
+	margin:  0 240px;
+}
+
+.chat-log {
+	margin-left: 2px;
+	padding-left: 0;
+}
+.chat-log li {
+	list-style: none;
+	font-size: 12pt;
+}
+.chat-log li label, .chat-popup label {
+	margin-right: 10px;
+	text-align: right;
+	width: 50px;
+	font-weight: bold;
+}
+
+.chat-popup {
+	position: fixed;
+	right: 20px;
+	top: 20px;
+	width: 300px;
+	height: 50px;
+	background-color: #E6E6E6;
+	border: 1px solid #000;
+	z-index: 1000;
+	border-radius: 10px;
+}
 .animateDialog-default {
 	position: fixed;
 	left: 50%;
