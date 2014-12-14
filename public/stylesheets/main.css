@@ -70,6 +70,16 @@
 	backgounrd: #D6D6D6;
 }
 
+.modal-header.heroku {
+	background: #5B4892;
+	color: #FFF;
+}
+
+.modal-header.salesforce {
+	background: #00A0DF;
+	color: #FFF;
+}
+
 .player {
 	position: absolute;
 	height: 50px;
@@ -226,6 +236,10 @@ img.salesforce, img.heroku {
 	height: 384px;
 }
 
+.result-detail {
+	margin-top: -384px;
+	text-align: center;
+}
 .animateDialog-default {
 	position: fixed;
 	left: 50%;

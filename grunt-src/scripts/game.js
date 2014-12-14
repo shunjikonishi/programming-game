@@ -199,21 +199,22 @@ function Game($el, sessionId, con) {
 			}
 			return null;
 		}
-		function gameEnd() {
+		function gameEnd(winner) {
 			running = false;
 			if (!replay) {
 				con.request({
-					"command": "gameEnd"
+					"command": "gameEnd",
+					"data": {
+						"winner": winner
+					}
 				});
 			}
 		}
 		function gameover(winner) {
-			resultDialog.win(winner);
-			gameEnd();
+			gameEnd(winner);
 		}
 		function draw() {
-			resultDialog.draw();
-			gameEnd();
+			gameEnd("draw");
 		}
 		function showConflict(pos) {
 			var $conflict = $("#conflict").show();
@@ -445,8 +446,7 @@ function Game($el, sessionId, con) {
 		running = false,
 		turnCount = -1,
 		currentTurn = -1,
-		testCtrl = new TestControl(),
-		resultDialog = new ResultDialog($("#result-dialog"));
+		testCtrl = new TestControl();
 	$el.append(bug.element());
 	$.extend(this, {
 		"field": field,

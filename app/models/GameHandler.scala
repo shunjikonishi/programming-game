@@ -42,7 +42,8 @@ class GameHandler(room: GameRoom, sessionId: String) extends RoomHandler(room) w
       CommandResponse.None
     }
     addHandler("gameEnd") { command =>
-      room.gameEnd
+      val winner = (command.data \ "winner").as[String]
+      room.gameEnd(winner)
       CommandResponse.None
     }
     addHandler("playerAction") { command =>

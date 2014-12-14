@@ -44,6 +44,9 @@ pg.Application = function(gameId, sessionId) {
 			alert(data);
 		});
 		con.on("change", function(data) {
+			if (!watch) {
+				return;
+			}
 			var ctrl = data.name === "salesforce" ? salesforceCtrl : herokuCtrl;
 			ctrl.getEditor().applyChange(data);
 		});
@@ -51,15 +54,21 @@ pg.Application = function(gameId, sessionId) {
 		con.on("codingStart", codingStart);
 		con.on("executeStart", executeStart);
 		con.on("commandRequest", commandRequest);
-		con.on("turnAction", game.turnAction);
+		con.on("turnAction", function(data) {
+			if (!watch) {
+				return;
+			}
+			game.turnAction(data);
+		});
 		con.on("gameEnd", function(data) {
 			salesforceCtrl.gameEnd();
 			herokuCtrl.gameEnd();
 			game.getSalesforce().entry(null);
 			game.getHeroku().entry(null);
-			replays = data;
+			replays = data.replays;
 			observers = [];
 			updateButtons();
+			resultDialog.show(data);
 		});
 		con.request({
 			"command": "status",
@@ -177,11 +186,15 @@ pg.Application = function(gameId, sessionId) {
 		$(".header-label").hide();
 		updateEntryButton($salesforceEntry, s);
 		updateEntryButton($herokuEntry, h);
+		$("#salesforce-buttons").find("button").prop("disabled", true);
+		herokuCtrl.getEditor().readOnly(true);
+		watch = false;
 		if (replays.length === 0) {
 			resetEditors();
 		}
 	}
 	function codingStart(setting) {
+		watch = true;
 		$(".btn-test").prop("disabled", false);
 		$gameStart.hide();
 		if (stopWatch.isRunning()) {
@@ -196,6 +209,7 @@ pg.Application = function(gameId, sessionId) {
 		observers = [];
 	}
 	function executeStart(data) {
+		watch = true;
 		$(".btn-test").prop("disabled", true);
 		game.showMessage(MSG.gameStart);
 		game.start(data.gameTime);
@@ -252,8 +266,7 @@ pg.Application = function(gameId, sessionId) {
 		});
 	}
 	var con = new room.Connection({
-			"url": location.protocol.replace("http", "ws") + "//" + location.host + "/ws/" + gameId,
-			"logger": console
+			"url": location.protocol.replace("http", "ws") + "//" + location.host + "/ws/" + gameId
 		}),
 		game = new Game($("#game"), sessionId, con),
 		salesforceCtrl = new SalesforceCtrl(game, con),
@@ -262,6 +275,7 @@ pg.Application = function(gameId, sessionId) {
 		watch = false,
 		replays = [],
 		observers = [],
+		resultDialog = new ResultDialog($("#result-dialog")),
 		$gameGen = $("#game-gen"),
 		$replay = $("#replay"),
 		$salesforceEntry = $("#salesforce-entry"),

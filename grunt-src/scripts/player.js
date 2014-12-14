@@ -23,6 +23,7 @@ function Player(imageSrc, initialX, initialY, $point) {
 	}
 	function reset(nx, ny) {
 		point = 0;
+		addPoint(0);
 		commands = [];
 		if (nx !== undefined) {
 			initialX = nx;

@@ -69,7 +69,6 @@ class GameRoom(name: String) extends DefaultRoom(name) {
   }
 
   def commandRequest(next: Int, rest: Int, turnTime: Int): Unit = {
-println(s"commandRequest $next, $rest")
     Akka.system.scheduler.scheduleOnce(next milliseconds) {
       broadcast(new CommandResponse("commandRequest", JsNull).toString)
       if (rest > 0) {
@@ -82,16 +81,28 @@ println(s"commandRequest $next, $rest")
     actor ! CodingStart(data)
   }
 
-  def doGameEnd = {
+  def doGameEnd(winner: String) = {
     status_.filter(_.running).foreach { s =>
-      val replayData = JsArray(commands_.map(_.toJson))
+      val counter = Counter.apply
+      val key = winner match {
+        case "draw" => winner
+        case x => x.toLowerCase + "-win"
+      }
+      counter.inc(key)
+      val ret = JsObject(Seq(
+        "winner" -> JsString(winner),
+        "salesforce" -> JsNumber(counter.getSalesforceWin),
+        "heroku" -> JsNumber(counter.getHerokuWin),
+        "draw" -> JsNumber(counter.getDraw),
+        "replays" -> JsArray(commands_.map(_.toJson))
+      ))
       status_ = Some(s.reset)
-      broadcast(new CommandResponse("gameEnd", replayData).toString)
+      broadcast(new CommandResponse("gameEnd", ret).toString)
     }
   }
 
-  def gameEnd = {
-    actor ! GameEnd
+  def gameEnd(winner: String) = {
+    actor ! GameEnd(winner)
   }
 
   private def doSendAction(player: String, action: JsValue) = {
@@ -137,8 +148,8 @@ println(s"commandRequest $next, $rest")
         doSendAction(player, action)
       case CodingStart(data) =>
         doCodingStart(data)
-      case GameEnd =>
-        doGameEnd
+      case GameEnd(winner) =>
+        doGameEnd(winner)
       case x => 
         super.receive(x)
     }
@@ -149,6 +160,6 @@ println(s"commandRequest $next, $rest")
   private case class Entry(player: String, sessionId: String)
   private case class SendAction(player: String, action: JsValue)
   private case class CodingStart(data: JsValue)
-  private case class GameEnd()
+  private case class GameEnd(winner: String)
 }
 

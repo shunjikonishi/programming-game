@@ -56,6 +56,9 @@ pg.Application = function(gameId, sessionId) {
 			alert(data);
 		});
 		con.on("change", function(data) {
+			if (!watch) {
+				return;
+			}
 			var ctrl = data.name === "salesforce" ? salesforceCtrl : herokuCtrl;
 			ctrl.getEditor().applyChange(data);
 		});
@@ -63,15 +66,21 @@ pg.Application = function(gameId, sessionId) {
 		con.on("codingStart", codingStart);
 		con.on("executeStart", executeStart);
 		con.on("commandRequest", commandRequest);
-		con.on("turnAction", game.turnAction);
+		con.on("turnAction", function(data) {
+			if (!watch) {
+				return;
+			}
+			game.turnAction(data);
+		});
 		con.on("gameEnd", function(data) {
 			salesforceCtrl.gameEnd();
 			herokuCtrl.gameEnd();
 			game.getSalesforce().entry(null);
 			game.getHeroku().entry(null);
-			replays = data;
+			replays = data.replays;
 			observers = [];
 			updateButtons();
+			resultDialog.show(data);
 		});
 		con.request({
 			"command": "status",
@@ -189,11 +198,15 @@ pg.Application = function(gameId, sessionId) {
 		$(".header-label").hide();
 		updateEntryButton($salesforceEntry, s);
 		updateEntryButton($herokuEntry, h);
+		$("#salesforce-buttons").find("button").prop("disabled", true);
+		herokuCtrl.getEditor().readOnly(true);
+		watch = false;
 		if (replays.length === 0) {
 			resetEditors();
 		}
 	}
 	function codingStart(setting) {
+		watch = true;
 		$(".btn-test").prop("disabled", false);
 		$gameStart.hide();
 		if (stopWatch.isRunning()) {
@@ -208,6 +221,7 @@ pg.Application = function(gameId, sessionId) {
 		observers = [];
 	}
 	function executeStart(data) {
+		watch = true;
 		$(".btn-test").prop("disabled", true);
 		game.showMessage(MSG.gameStart);
 		game.start(data.gameTime);
@@ -264,8 +278,7 @@ pg.Application = function(gameId, sessionId) {
 		});
 	}
 	var con = new room.Connection({
-			"url": location.protocol.replace("http", "ws") + "//" + location.host + "/ws/" + gameId,
-			"logger": console
+			"url": location.protocol.replace("http", "ws") + "//" + location.host + "/ws/" + gameId
 		}),
 		game = new Game($("#game"), sessionId, con),
 		salesforceCtrl = new SalesforceCtrl(game, con),
@@ -274,6 +287,7 @@ pg.Application = function(gameId, sessionId) {
 		watch = false,
 		replays = [],
 		observers = [],
+		resultDialog = new ResultDialog($("#result-dialog")),
 		$gameGen = $("#game-gen"),
 		$replay = $("#replay"),
 		$salesforceEntry = $("#salesforce-entry"),
@@ -485,21 +499,22 @@ function Game($el, sessionId, con) {
 			}
 			return null;
 		}
-		function gameEnd() {
+		function gameEnd(winner) {
 			running = false;
 			if (!replay) {
 				con.request({
-					"command": "gameEnd"
+					"command": "gameEnd",
+					"data": {
+						"winner": winner
+					}
 				});
 			}
 		}
 		function gameover(winner) {
-			resultDialog.win(winner);
-			gameEnd();
+			gameEnd(winner);
 		}
 		function draw() {
-			resultDialog.draw();
-			gameEnd();
+			gameEnd("draw");
 		}
 		function showConflict(pos) {
 			var $conflict = $("#conflict").show();
@@ -731,8 +746,7 @@ function Game($el, sessionId, con) {
 		running = false,
 		turnCount = -1,
 		currentTurn = -1,
-		testCtrl = new TestControl(),
-		resultDialog = new ResultDialog($("#result-dialog"));
+		testCtrl = new TestControl();
 	$el.append(bug.element());
 	$.extend(this, {
 		"field": field,
@@ -895,6 +909,7 @@ function Player(imageSrc, initialX, initialY, $point) {
 	}
 	function reset(nx, ny) {
 		point = 0;
+		addPoint(0);
 		commands = [];
 		if (nx !== undefined) {
 			initialX = nx;
@@ -1324,6 +1339,13 @@ function TextEditor(name, $textarea, con) {
 			}
 			return false;
 		}
+		function isTargetRow(i) {
+			var bgClass = editor.lineInfo(i).bgClass;
+			if (bgClass && bgClass.indexOf("editor-error") !== -1) {
+				return true;
+			}
+			return i !== currentLine;
+		}
 		var currentLine = instance.getCursor().line, 
 			data = {
 				"name": name,
@@ -1339,7 +1361,7 @@ function TextEditor(name, $textarea, con) {
 			};
 		for (var i=change.from.line; i<=change.to.line; i++) {
 			var hasError = false;
-			if (i !== currentLine) {
+			if (isTargetRow(i)) {
 				var text = instance.getLine(i);
 				if (text && text.trim().length > 0) {
 					hasError = isError(parser.parse(text));
@@ -1714,25 +1736,33 @@ function Animate($el) {
 	});
 }
 function ResultDialog($el) {
-	function show(name) {
+	function show(data) {
+		var title = MSG.draw,
+			name = data.winner,
+			detail = MSG.format(MSG.result_detail2, data.salesforce, data.heroku, data.draw),
+			$head = $el.find(".modal-header");
+		$head.removeClass("heroku salesforce");
+		if (name !== "draw") {
+			title = MSG.format(MSG.win, data.winner);
+			name = "win-" + data.winner.toLowerCase();
+			$head.addClass(data.winner.toLowerCase());
+			if (data.winner.toLowerCase() === "salesforce") {
+				detail = MSG.format(MSG.result_detail, data.salesforce, data.heroku, data.draw);
+			} else {
+				detail = MSG.format(MSG.result_detail, data.heroku, data.salesforce, data.draw);
+			}
+		}
+		$el.find(".modal-title").text(title);
+		$el.find(".result-detail").text(detail);
 		$el.find("img").attr("src", "/assets/images/illust/" + name + ".png");
 		setTimeout(function() {
 			$el.modal({
 				"show": true
 			});
-		}, 800);
-	}
-	function win(name) {
-		$el.find(".modal-title").text(MSG.format(MSG.win, name));
-		show("win-" + name.toLowerCase());
-	}
-	function draw() {
-		$el.find(".modal-title").text(MSG.draw);
-		show("draw");
+		}, 500);
 	}
 	$.extend(this, {
-		"win": win,
-		"draw": draw
+		"show": show
 	});
 }
 function Observer(name, con, game, player, editor) {

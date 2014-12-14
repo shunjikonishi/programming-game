@@ -152,6 +152,13 @@ function TextEditor(name, $textarea, con) {
 			}
 			return false;
 		}
+		function isTargetRow(i) {
+			var bgClass = editor.lineInfo(i).bgClass;
+			if (bgClass && bgClass.indexOf("editor-error") !== -1) {
+				return true;
+			}
+			return i !== currentLine;
+		}
 		var currentLine = instance.getCursor().line, 
 			data = {
 				"name": name,
@@ -167,7 +174,7 @@ function TextEditor(name, $textarea, con) {
 			};
 		for (var i=change.from.line; i<=change.to.line; i++) {
 			var hasError = false;
-			if (i !== currentLine) {
+			if (isTargetRow(i)) {
 				var text = instance.getLine(i);
 				if (text && text.trim().length > 0) {
 					hasError = isError(parser.parse(text));
