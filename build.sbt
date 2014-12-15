@@ -8,7 +8,7 @@ scalaVersion := "2.11.1"
 
 libraryDependencies ++= Seq(
   cache,
-  "roomframework" %% "roomframework" % "0.9.4"
+  "roomframework" %% "roomframework" % "0.9.5"
 )
 
 sources in (Compile, doc) := Seq.empty
