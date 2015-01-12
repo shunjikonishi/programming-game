@@ -37,4 +37,8 @@ object Application extends Controller {
     val langMap = map("default") ++ map.getOrElse(lang, Map.empty)
     Ok(views.js.messages(langMap.filterKeys(_.startsWith("ui."))))
   }
+
+  def tokyo() = Action { implicit request =>
+    Ok(views.html.tokyo_region())
+  }
 }
